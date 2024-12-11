@@ -24,12 +24,18 @@ userController.post(
   '/',
   validator.body(createUserSchema),
   async (req, res) => {
-    res.send(
-      await userRepository.save({
-        login: req.body.login,
-        password: req.body.password,
-      }),
-    )
+    try {
+      res.send(
+        await userRepository.save({
+          login: req.body.login,
+          password: req.body.password,
+        }),
+      )
+    } catch (error: any) {
+      res
+        .status(400)
+        .send({ error: error.message })
+    }
   },
 )
 

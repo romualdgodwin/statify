@@ -14,4 +14,6 @@ export class User {
   login: string
   @Column()
   password: string
+  @Column()
+  role: string
 }
