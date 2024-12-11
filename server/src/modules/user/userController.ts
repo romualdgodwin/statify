@@ -27,10 +27,16 @@ userController.post(
 userController.get(
   '/:id',
   async (req, res) => {
-    res.send(
-      await userRepository.findOneBy({
-        id: Number(req.params.id),
-      }),
-    )
+    if (isNaN(Number(req.params.id))) {
+      res
+        .status(404)
+        .send('Id should be a number')
+    } else {
+      res.send(
+        await userRepository.findOneBy({
+          id: Number(req.params.id),
+        }),
+      )
+    }
   },
 )
