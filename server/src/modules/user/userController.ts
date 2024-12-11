@@ -2,10 +2,18 @@ import { Router } from 'express'
 import { userRepository } from './userRepository'
 import { createValidator } from 'express-joi-validation'
 import Joi from 'joi'
+import { expressjwt } from 'express-jwt'
 
 export const userController = Router()
 
 const validator = createValidator()
+
+userController.use(
+  expressjwt({
+    secret: 'secret',
+    algorithms: ['HS256'],
+  }),
+)
 
 userController.get('/', async (req, res) => {
   res.send(await userRepository.find())
