@@ -38,5 +38,5 @@ http://localhost:3000
 Extension ESLint sur  VSCode et Webstorm
 En lgigne de commande:
 ```bash
-yarn linst
+yarn lint
 ```
