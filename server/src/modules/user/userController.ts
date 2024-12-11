@@ -2,7 +2,10 @@ import { Router } from 'express'
 import { userRepository } from './userRepository'
 import { createValidator } from 'express-joi-validation'
 import Joi from 'joi'
-import { expressjwt } from 'express-jwt'
+import {
+  expressjwt,
+  Request as JWTRequest,
+} from 'express-jwt'
 
 export const userController = Router()
 
@@ -15,8 +18,13 @@ userController.use(
   }),
 )
 
-userController.get('/', async (req, res) => {
-  res.send(await userRepository.find())
+userController.get('/', async (req: JWTRequest, res) => {
+  const role = req.auth?.role
+  if (role == 'admin') {
+    res.send(await userRepository.find())
+  } else {
+    res.sendStatus(403)
+  }
 })
 
 const createUserSchema = Joi.object({
@@ -51,11 +59,16 @@ const getUserSchema = Joi.object({
 userController.get(
   '/:id',
   validator.params(getUserSchema),
-  async (req, res) => {
-    res.send(
-      await userRepository.findOneBy({
-        id: Number(req.params.id),
-      }),
-    )
+  async (req: JWTRequest, res) => {
+    const id = Number(req.params.id)
+    if (req.auth?.role === 'admin' || req.auth?.id === id) {
+      res.send(
+        await userRepository.findOneBy({
+          id,
+        }),
+      )
+    } else {
+      res.sendStatus(403)
+    }
   },
 )
