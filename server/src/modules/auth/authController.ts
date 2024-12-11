@@ -24,6 +24,7 @@ authController.post(
       const token = jwt.sign(
         {
           id: user.id,
+          role: user.role,
         },
         'secret',
         {

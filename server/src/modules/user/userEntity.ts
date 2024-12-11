@@ -14,4 +14,8 @@ export class User {
   login: string
   @Column()
   password: string
+  @Column({
+    nullable: true,
+  })
+  role?: string
 }

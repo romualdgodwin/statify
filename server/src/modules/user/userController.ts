@@ -22,6 +22,7 @@ userController.get('/', async (req, res) => {
 const createUserSchema = Joi.object({
   login: Joi.string().required(),
   password: Joi.string().required(),
+  role: Joi.string().optional(),
 })
 userController.post(
   '/',
@@ -32,6 +33,7 @@ userController.post(
         await userRepository.save({
           login: req.body.login,
           password: req.body.password,
+          role: req.body.role ?? 'user',
         }),
       )
     } catch (error: any) {
