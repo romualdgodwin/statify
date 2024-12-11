@@ -23,3 +23,14 @@ userController.post(
     )
   },
 )
+
+userController.get(
+  '/:id',
+  async (req, res) => {
+    res.send(
+      await userRepository.findOneBy({
+        id: Number(req.params.id),
+      }),
+    )
+  },
+)
