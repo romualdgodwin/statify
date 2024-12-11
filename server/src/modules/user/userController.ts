@@ -7,14 +7,9 @@ export const userController = Router()
 
 const validator = createValidator()
 
-userController.get(
-  '/',
-  async (req, res) => {
-    res.send(
-      await userRepository.find(),
-    )
-  },
-)
+userController.get('/', async (req, res) => {
+  res.send(await userRepository.find())
+})
 
 const createUserSchema = Joi.object({
   login: Joi.string().required(),
