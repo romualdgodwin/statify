@@ -1,3 +1,5 @@
+import 'dotenv/config'
+
 import { Router } from 'express'
 import { userRepository } from './userRepository'
 import { createValidator } from 'express-joi-validation'
@@ -13,7 +15,7 @@ const validator = createValidator()
 
 userController.use(
   expressjwt({
-    secret: 'secret',
+    secret: process.env.JWT_SECRET!,
     algorithms: ['HS256'],
   }),
 )

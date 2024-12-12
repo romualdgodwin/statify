@@ -26,7 +26,7 @@ authController.post(
           id: user.id,
           role: user.role,
         },
-        'secret',
+        process.env.JWT_SECRET!,
         {
           algorithm: 'HS256',
         },

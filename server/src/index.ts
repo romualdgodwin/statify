@@ -13,6 +13,13 @@ app.get('/', (req, res) => {
 app.use('/users', userController)
 app.use('/auth', authController)
 
+const port = process.env.PORT
+  ? Number(process.env.PORT)
+  : 3000
 AppDataSource.initialize().then(() => {
-  app.listen(3000)
+  app.listen(port, () => {
+    console.log(
+      `Server started at http://localhost:${port}`,
+    )
+  })
 })
