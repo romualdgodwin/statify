@@ -1,7 +1,11 @@
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 
-export const Header = () => {
+export type HeaderProps = {
+  title: string;
+};
+
+export const Header = (props: HeaderProps) => {
   return (
     <>
       <div>
@@ -12,7 +16,7 @@ export const Header = () => {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
-      <h1>Vite + React</h1>
+      <h1>{props.title}</h1>
     </>
   );
 };
