@@ -5,7 +5,7 @@ export type HeaderProps = {
   title: string;
 };
 
-export const Header = (props: HeaderProps) => {
+export const Header = ({ title }: HeaderProps) => {
   return (
     <>
       <div>
@@ -16,7 +16,7 @@ export const Header = (props: HeaderProps) => {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
-      <h1>{props.title}</h1>
+      <h1>{title}</h1>
     </>
   );
 };
