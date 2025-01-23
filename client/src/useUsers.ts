@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
+export type User = {
+  id: number;
+  login: string;
+  password: string;
+  role?: string;
+};
+
 export const useUsers = () => {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

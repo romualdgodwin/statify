@@ -9,7 +9,7 @@ export const Users = () => {
         <span>Loading...</span>
       ) : (
         <ul>
-          {users.map((user: any) => (
+          {users.map((user) => (
             <li key={user.id}>{user.login}</li>
           ))}
         </ul>
