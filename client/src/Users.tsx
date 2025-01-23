@@ -1,23 +1,8 @@
-import axios from "axios";
 import { Page } from "./Page";
-import { useEffect, useState } from "react";
+import { useUsers } from "./useUsers";
 
 export const Users = () => {
-  const [users, setUsers] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const data = (await axios.get("http://localhost:3000/users")).data;
-        setUsers(data);
-      } finally {
-        setTimeout(() => setIsLoading(false), 1000);
-      }
-    };
-    fetchUsers();
-  }, []);
-
+  const { isLoading, users } = useUsers();
   return (
     <Page title="Users">
       {isLoading ? (
