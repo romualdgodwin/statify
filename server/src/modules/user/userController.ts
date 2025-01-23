@@ -13,12 +13,20 @@ export const userController = Router()
 
 const validator = createValidator()
 
-/*userController.use(
+userController.use(
   expressjwt({
     secret: process.env.JWT_SECRET!,
     algorithms: ['HS256'],
   }),
-)*/
+)
+
+userController.use((req: JWTRequest, res, next) => {
+  if (req.auth?.role === 'admin') {
+    next()
+  } else {
+    res.sendStatus(403)
+  }
+})
 
 userController.get('/', async (req: JWTRequest, res) => {
   //const role = req.auth?.role
@@ -32,7 +40,7 @@ userController.get('/', async (req: JWTRequest, res) => {
 const createUserSchema = Joi.object({
   login: Joi.string().required(),
   password: Joi.string().required(),
-  role: Joi.string().optional(),
+  role: Joi.string().valid('user', 'admin').optional(),
 })
 userController.post(
   '/',

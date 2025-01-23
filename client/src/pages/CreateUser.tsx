@@ -3,6 +3,8 @@ import { Page } from "../components/Page";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import Joi from "joi";
+import { joiResolver } from "@hookform/resolvers/joi";
 
 type UserForm = {
   login: string;
@@ -10,8 +12,19 @@ type UserForm = {
   isAdmin: boolean;
 };
 
+const userFormSchema = Joi.object<UserForm>({
+  login: Joi.string().required(),
+  password: Joi.string().min(6).required(),
+});
+
 export const CreateUser = () => {
-  const { register, handleSubmit } = useForm<UserForm>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<UserForm>({
+    resolver: joiResolver(userFormSchema),
+  });
 
   const navigate = useNavigate();
 
@@ -30,6 +43,7 @@ export const CreateUser = () => {
         <Form.Group>
           <Form.Label>Login</Form.Label>
           <Form.Control placeholder="Enter login" {...register("login")} />
+          {errors.login && <span>{errors.login.message}</span>}
         </Form.Group>
         <Form.Group>
           <Form.Label>Password</Form.Label>
@@ -38,6 +52,7 @@ export const CreateUser = () => {
             placeholder="Password"
             {...register("password")}
           />
+          {errors.password && <span>{errors.password.message}</span>}
         </Form.Group>
         <Form.Group>
           <Form.Check type="checkbox" label="Admin" {...register("isAdmin")} />
