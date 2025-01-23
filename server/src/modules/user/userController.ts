@@ -12,21 +12,21 @@ import {
 export const userController = Router()
 
 const validator = createValidator()
-// plop
-userController.use(
+
+/*userController.use(
   expressjwt({
     secret: process.env.JWT_SECRET!,
     algorithms: ['HS256'],
   }),
-)
+)*/
 
 userController.get('/', async (req: JWTRequest, res) => {
-  const role = req.auth?.role
-  if (role == 'admin') {
-    res.send(await userRepository.find())
-  } else {
-    res.sendStatus(403)
-  }
+  //const role = req.auth?.role
+  //if (role == 'admin') {
+  res.send(await userRepository.find())
+  //} else {
+  //  res.sendStatus(403)
+  //}
 })
 
 const createUserSchema = Joi.object({
@@ -63,14 +63,14 @@ userController.get(
   validator.params(getUserSchema),
   async (req: JWTRequest, res) => {
     const id = Number(req.params.id)
-    if (req.auth?.role === 'admin' || req.auth?.id === id) {
-      res.send(
-        await userRepository.findOneBy({
-          id,
-        }),
-      )
-    } else {
-      res.sendStatus(403)
-    }
+    //if (req.auth?.role === 'admin' || req.auth?.id === id) {
+    res.send(
+      await userRepository.findOneBy({
+        id,
+      }),
+    )
+    //} else {
+    //  res.sendStatus(403)
+    //}
   },
 )

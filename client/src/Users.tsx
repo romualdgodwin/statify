@@ -7,14 +7,7 @@ export const Users = () => {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const data = (
-        await axios.get("http://localhost:3000/users", {
-          headers: {
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzM3NjE5MTA4fQ.zS0JKAk2lDE_oBFk5Z0g9Yhaln9hbbU6kV8j-M0fKN4",
-          },
-        })
-      ).data;
+      const data = (await axios.get("http://localhost:3000/users")).data;
       setUsers(data);
     };
     fetchUsers();
