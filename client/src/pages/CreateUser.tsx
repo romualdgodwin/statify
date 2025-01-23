@@ -47,7 +47,7 @@ export const CreateUser = () => {
             type="checkbox"
             label="Admin"
             checked={isAdmin}
-            onChange={(e) => setIsAdmin(Boolean(e.target.checked))}
+            onChange={(e) => setIsAdmin(e.target.checked)}
           />
         </Form.Group>
         <Button variant="primary" type="submit">
