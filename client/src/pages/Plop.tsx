@@ -1,6 +1,6 @@
 import { Button } from "react-bootstrap";
 import "./Home.css";
-import { Page } from "./Page";
+import { Page } from "../components/Page";
 
 export const Plop = () => {
   return (

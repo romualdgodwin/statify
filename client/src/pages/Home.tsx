@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./Home.css";
-import { Page } from "./Page";
+import { Page } from "../components/Page";
 import { Link } from "react-router-dom";
 
 export const Home = () => {

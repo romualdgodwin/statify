@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Home } from "./Home";
-import { Plop } from "./Plop";
-import { Users } from "./Users";
+import { Home } from "./pages/Home";
+import { Plop } from "./pages/Plop";
+import { Users } from "./pages/Users";
 
 export const App = () => {
   return (

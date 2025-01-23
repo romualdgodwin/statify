@@ -1,5 +1,5 @@
-import { Page } from "./Page";
-import { useUsers } from "./useUsers";
+import { Page } from "../components/Page";
+import { useUsers } from "../hooks/useUsers";
 
 export const Users = () => {
   const { isLoading, users, error } = useUsers();
