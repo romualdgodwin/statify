@@ -3,6 +3,7 @@ import { Home } from "./pages/Home";
 import { Plop } from "./pages/Plop";
 import { Users } from "./pages/Users";
 import { CreateUser } from "./pages/CreateUser";
+import { Tailwind } from "./pages/Tailwind";
 
 export const App = () => {
   return (
@@ -12,6 +13,7 @@ export const App = () => {
         <Route path="/plop" element={<Plop />} />
         <Route path="/users" element={<Users />} />
         <Route path="/createUser" element={<CreateUser />} />
+        <Route path="/tailwind" element={<Tailwind />} />
       </Routes>
     </BrowserRouter>
   );
