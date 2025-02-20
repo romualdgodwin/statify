@@ -33,6 +33,7 @@ authController.post(
       )
       res.send({
         token,
+        id: user.id,
       })
     } else {
       res.sendStatus(401)
