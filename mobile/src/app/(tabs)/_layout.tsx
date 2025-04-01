@@ -4,7 +4,10 @@ export default function Layout() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <Tabs />
+      <Tabs>
+        <Tabs.Screen name="home" />
+        <Tabs.Screen name="profile" />
+      </Tabs>
     </>
   );
 }
