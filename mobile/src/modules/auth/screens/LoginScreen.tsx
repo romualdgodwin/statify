@@ -1,3 +1,4 @@
+import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { Alert, Button, StyleSheet, Text, TextInput, View } from "react-native";
@@ -6,15 +7,17 @@ export const LoginScreen = () => {
   const [value, setValue] = useState("");
   return (
     <View style={styles.container}>
-      <StatusBar style="auto" />
+      <Stack.Screen options={{
+        title: "Login"
+      }} />
       <TextInput
         style={styles.input}
         value={value}
         onChangeText={setValue}
       />
       <View style={styles.button}>
-        <Button title="Print" onPress={() => {
-          Alert.alert(`Value: ${value}`);
+        <Button title="Go" onPress={() => {
+          router.push("/home");
         }} />
       </View>
     </View>
