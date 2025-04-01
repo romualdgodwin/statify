@@ -1,10 +1,10 @@
-import { Stack } from "expo-router";
+import { Stack, Tabs } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 export const HomeScreen = () => {
   return (
     <View style={styles.container}>
-      <Stack.Screen
+      <Tabs.Screen
         options={{
           title: "Home",
         }}
