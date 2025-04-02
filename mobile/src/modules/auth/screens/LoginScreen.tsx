@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import {
   Alert,
   Button,
+  Image,
   KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
@@ -11,6 +12,8 @@ import {
   TextInput,
   View,
 } from "react-native";
+
+const logo = require('../resources/ort-logo.png')
 
 export const LoginScreen = () => {
   const [value, setValue] = useState("");
@@ -26,9 +29,7 @@ export const LoginScreen = () => {
             title: "Login",
           }}
         />
-        <View style={styles.topView}>
-          <Text>Image</Text>
-        </View>
+        <Image style={styles.image} source={logo} />
         <TextInput
           style={styles.input}
           value={value}
@@ -76,13 +77,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 16,
   },
-  topView: {
-    height: 500,
-    backgroundColor: "#00000055",
-    borderColor: "black",
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
+  image: {
+    alignSelf: "center",
   },
   button: {
     borderWidth: 1,
