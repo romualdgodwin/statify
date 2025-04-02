@@ -1,6 +1,13 @@
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import { useRef, useState } from "react";
 import {
   Alert,
@@ -13,9 +20,10 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { firestore } from "../../utils/firebase";
+import { auth, firestore } from "../../utils/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
-const logo = require('../resources/ort-logo.png')
+const logo = require("../resources/ort-logo.png");
 
 export const LoginScreen = () => {
   const [login, setLogin] = useState("");
@@ -25,18 +33,20 @@ export const LoginScreen = () => {
   const passwordRef = useRef<TextInput>(null);
 
   const onSubmit = async () => {
-    const usersRef = collection(firestore, 'users')
-    const usersQuery = query(usersRef, where('login', '==', login), where('password', '==', password))
-    const docs  = await getDocs(usersQuery)
-    if(docs.empty) {
-      Alert.alert("Login failed", "Invalid credentials");
-      return;
+    try {
+      await signInWithEmailAndPassword(auth, login, password);
+      router.push("/home");
+    } catch {
+      Alert.alert("Error", "Invalid credentials");
     }
-    router.push("/home");
-  }
+  };
 
   return (
-    <ScrollView ref={scrollViewRef} style={{flex: 1}} contentContainerStyle={{ paddingBottom: 300}}>
+    <ScrollView
+      ref={scrollViewRef}
+      style={{ flex: 1 }}
+      contentContainerStyle={{ paddingBottom: 300 }}
+    >
       <View style={styles.container}>
         <Stack.Screen
           options={{
@@ -45,7 +55,7 @@ export const LoginScreen = () => {
         />
         <Image style={styles.image} source={logo} />
         <TextInput
-         autoCapitalize="none"
+          autoCapitalize="none"
           autoCorrect={false}
           autoComplete="username"
           textContentType="username"
@@ -54,8 +64,8 @@ export const LoginScreen = () => {
           onChangeText={setLogin}
           placeholder="Login"
           onFocus={() => {
-            console.log('scroll')
-            scrollViewRef.current?.scrollToEnd()
+            console.log("scroll");
+            scrollViewRef.current?.scrollToEnd();
           }}
           returnKeyType="next"
           onSubmitEditing={() => {
@@ -63,8 +73,8 @@ export const LoginScreen = () => {
           }}
         />
         <TextInput
-         ref={passwordRef}
-         secureTextEntry
+          ref={passwordRef}
+          secureTextEntry
           style={styles.input}
           value={password}
           onChangeText={setPassword}
@@ -72,10 +82,7 @@ export const LoginScreen = () => {
           returnKeyType="send"
         />
         <View style={styles.button}>
-          <Button
-            title="Submit"
-            onPress={onSubmit}
-          />
+          <Button title="Submit" onPress={onSubmit} />
         </View>
       </View>
     </ScrollView>
