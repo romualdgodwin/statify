@@ -16,6 +16,7 @@ export const LoginScreen = () => {
   const [value, setValue] = useState("");
 
   const scrollViewRef = useRef<ScrollView>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   return (
     <ScrollView ref={scrollViewRef} style={{flex: 1}} contentContainerStyle={{ paddingBottom: 300}}>
@@ -37,12 +38,18 @@ export const LoginScreen = () => {
             console.log('scroll')
             scrollViewRef.current?.scrollToEnd()
           }}
+          returnKeyType="next"
+          onSubmitEditing={() => {
+            passwordRef.current?.focus();
+          }}
         />
         <TextInput
+         ref={passwordRef}
           style={styles.input}
           value={value}
           onChangeText={setValue}
           placeholder="Password"
+          returnKeyType="send"
         />
         <View style={styles.button}>
           <Button
