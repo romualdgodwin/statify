@@ -7,15 +7,17 @@ export const Users = () => {
   return (
     <Page title="Users">
       {isLoading ? (
-        <span>Loading...</span>
+        <span data-testid="loading">Loading...</span>
       ) : (
         <>
           {error ? (
             <div>{error}</div>
           ) : (
-            <ul>
+            <ul data-testid="users">
               {users.map((user) => (
-                <li key={user.id}>{user.login}</li>
+                <li data-testid={`user-${user.id}`} key={user.id}>
+                  {user.login}
+                </li>
               ))}
             </ul>
           )}
