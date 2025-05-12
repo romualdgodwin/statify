@@ -6,4 +6,5 @@ export default {
   moduleNameMapper: {
     "\\.(css|less|sass|scss)$": "identity-obj-proxy",
   },
+  setupFilesAfterEnv: ["./jest-setup.ts"],
 };
