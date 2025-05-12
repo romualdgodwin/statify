@@ -9,4 +9,9 @@ describe("Header", () => {
     expect(title).toHaveTextContent("plop");
     expect(title.tagName).toEqual("H1");
   });
+
+  test("it should match snapshot", async () => {
+    const fragment = render(<Header title="plop" />).asFragment();
+    expect(fragment).toMatchSnapshot();
+  });
 });

@@ -22,7 +22,7 @@ export const useUsers = () => {
       } catch (error: any) {
         setError(error.message);
       } finally {
-        setTimeout(() => setIsLoading(false), 1000);
+        setIsLoading(false);
       }
     };
     fetchUsers();
