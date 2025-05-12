@@ -18,7 +18,7 @@ export const Header = ({ title }: HeaderProps) => {
         </a>
         */}
       </div>
-      <h1>{title}</h1>
+      <h1 data-testid="title">{title}</h1>
     </>
   );
 };
