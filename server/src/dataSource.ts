@@ -1,8 +1,8 @@
 import { DataSource } from 'typeorm'
 import { User } from './modules/user/userEntity'
-import { Animal } from './modules/animal/animalEntity'
-import { Company } from './modules/user/companyEntity'
-import { Client } from './modules/user/clientEntity'
+//import { Animal } from './modules/animal/animalEntity'
+//import { Company } from './modules/user/companyEntity'
+//import { Client } from './modules/user/clientEntity'
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -11,7 +11,7 @@ export const AppDataSource = new DataSource({
   username: 'postgres',
   password: 'azerty',
   database: 'postgres',
-  entities: [User, Animal, Company, Client],
+  entities: [User],
   synchronize: true,
   logging: false,
 })

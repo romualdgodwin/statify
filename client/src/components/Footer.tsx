@@ -1,7 +1,7 @@
 export const Footer = () => {
   return (
-    <p className="read-the-docs">
-      Click on the Vite and React logos to learn more
-    </p>
+    <footer className="bg-light text-center py-3 mt-auto">
+      <small>© 2025 Statify - Tous droits réservés</small>
+    </footer>
   );
 };

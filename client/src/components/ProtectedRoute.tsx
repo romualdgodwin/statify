@@ -1,9 +1,14 @@
 import { PropsWithChildren } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { Login } from "../pages/Login";
+import { Navigate } from "react-router-dom";
 
 export const ProtectedRoute = ({ children }: PropsWithChildren) => {
   const { token } = useAuth();
 
-  return token ? children : <Login />;
+  // Si pas de token, redirige vers /login
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 };
