@@ -1,11 +1,13 @@
 services:
   db:
-    image: postgres
+    image: postgres:15
     restart: always
     environment:
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: azerty
+      POSTGRES_DB: statify   # ✅ on force le nom de la base
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - db_data:/var/lib/postgresql/data
 
@@ -13,7 +15,7 @@ services:
     image: adminer
     restart: always
     ports:
-      - "8080:8080"
+      - '8080:8080'
 
 volumes:
   db_data:

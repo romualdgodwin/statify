@@ -1,52 +1,74 @@
-import axios from "axios";
-import querystring from "querystring";
+import axios from 'axios'
+import querystring from 'querystring'
+import { AppDataSource } from '../dataSource'
+import { User } from '../modules/user/userEntity' // ✅
+import { config } from '../../config'
 
-const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID!;
-const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET!;
-let accessToken: string | null = null;
-let refreshToken: string | null = null;
-let tokenExpiresAt: number | null = null;
-
-/**
- * Initialise le gestionnaire avec un refresh_token existant
- */
-export function initSpotifyTokens(initialRefreshToken: string) {
-  refreshToken = initialRefreshToken;
-}
+const CLIENT_ID = config.spotify.clientId
+const CLIENT_SECRET = config.spotify.clientSecret
+console.log(
+  '🔑 Using Spotify credentials:',
+  CLIENT_ID,
+  CLIENT_SECRET?.slice(0, 5) + '...',
+)
 
 /**
- * Récupère un access_token valide
+ * Retourne un access_token valide pour un utilisateur.
+ * Rafraîchit le token si nécessaire et sauvegarde en DB.
  */
-export async function getSpotifyAccessToken(): Promise<string> {
-  // si le token actuel est encore valide, on le renvoie
-  if (accessToken && tokenExpiresAt && Date.now() < tokenExpiresAt) {
-    return accessToken;
+export async function getValidAccessToken(
+  user: User,
+): Promise<string> {
+  // ✅ Vérifie si le token est encore valide
+  if (
+    user.spotifyAccessToken &&
+    user.tokenExpiresAt &&
+    user.tokenExpiresAt.getTime() > Date.now()
+  ) {
+    return user.spotifyAccessToken
   }
 
-  if (!refreshToken) {
-    throw new Error("❌ Aucun refresh_token disponible. Authentifie-toi d’abord avec /spotify/login.");
+  if (!user.spotifyRefreshToken) {
+    throw new Error(
+      '❌ Aucun refresh_token pour cet utilisateur.',
+    )
   }
 
   try {
     const response = await axios.post(
-      "https://accounts.spotify.com/api/token",
+      'https://accounts.spotify.com/api/token',
       querystring.stringify({
-        grant_type: "refresh_token",
-        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+        refresh_token: user.spotifyRefreshToken,
         client_id: CLIENT_ID,
         client_secret: CLIENT_SECRET,
       }),
-      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-    );
+      {
+        headers: {
+          'Content-Type':
+            'application/x-www-form-urlencoded',
+        },
+      },
+    )
 
-    accessToken = response.data.access_token;
-    // expires_in est en secondes -> convertir en ms
-    tokenExpiresAt = Date.now() + response.data.expires_in * 1000;
+    const newAccessToken = response.data.access_token
+    const expiresIn = response.data.expires_in
 
-    console.log("✅ Nouveau Spotify access_token obtenu !");
-    return accessToken!;
+    user.spotifyAccessToken = newAccessToken
+    user.tokenExpiresAt = new Date(
+      Date.now() + expiresIn * 1000,
+    )
+
+    // ✅ sauvegarde en base dans la table users
+    await AppDataSource.getRepository(User).save(user)
+
+    console.log('✅ Nouveau Spotify access_token obtenu !')
+    return newAccessToken
   } catch (error: any) {
-    console.error("❌ Erreur lors du refresh Spotify:", error.response?.data || error.message);
-    throw error;
+    console.error(
+      '❌ Erreur refresh token:',
+      error.response?.data || error.message,
+    )
+    throw error
   }
 }

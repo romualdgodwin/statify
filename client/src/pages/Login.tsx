@@ -1,4 +1,3 @@
-// client/src/pages/Login.tsx
 import { useState } from "react";
 import { Form, Button, Alert } from "react-bootstrap";
 import axios from "axios";
@@ -6,7 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export const Login = () => {
-  const { login } = useAuth(); // ✅ utiliser "login" du AuthContext
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,12 +24,18 @@ export const Login = () => {
         password,
       });
 
-      // ✅ on stocke le token dans le AuthContext
-      login(res.data.token, "", "");
+      // ✅ Ici on n’a PAS de Spotify token → on passe null
+      login(res.data.token, null, null, res.data.role);
 
       setSuccess("Connexion réussie 🎉 Redirection...");
+
+      // ✅ Redirection selon rôle
       setTimeout(() => {
-        navigate("/mon-compte"); // ✅ redirection vers MonCompte
+        if (res.data.role === "admin") {
+          navigate("/admin-dashboard"); // 👉 tableau de bord admin
+        } else {
+          navigate("/spotify-dashboard"); // 👉 tableau de bord user
+        }
       }, 1500);
     } catch (err) {
       console.error("❌ Erreur de connexion :", err);
@@ -44,49 +49,63 @@ export const Login = () => {
   };
 
   return (
-    <div style={{ maxWidth: "400px", margin: "2rem auto" }}>
-      <h1>Connexion</h1>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center", 
+        alignItems: "center",     
+        width: "100%",
+        minHeight: "80vh",        
+        padding: "1rem",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: "400px" }}>
+        <h1 className="text-center mb-4">Connexion</h1>
 
-      {error && <Alert variant="danger">{error}</Alert>}
-      {success && <Alert variant="success">{success}</Alert>}
+        {error && <Alert variant="danger">{error}</Alert>}
+        {success && <Alert variant="success">{success}</Alert>}
 
-      <Form onSubmit={handleSubmit}>
-        <Form.Group className="mb-3">
-          <Form.Label>Email</Form.Label>
-          <Form.Control
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Entre ton email"
-            required
-          />
-        </Form.Group>
+        {/* === Formulaire classique === */}
+        <Form onSubmit={handleSubmit}>
+          <Form.Group className="mb-3">
+            <Form.Label>Email</Form.Label>
+            <Form.Control
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Entre ton email"
+              required
+            />
+          </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Mot de passe</Form.Label>
-          <Form.Control
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Mot de passe"
-            required
-          />
-        </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Mot de passe</Form.Label>
+            <Form.Control
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mot de passe"
+              required
+            />
+          </Form.Group>
 
-        <Button variant="primary" type="submit" className="w-100 mb-3">
-          Se connecter
+          <Button variant="primary" type="submit" className="w-100 mb-3">
+            Se connecter
+          </Button>
+        </Form>
+
+        <hr />
+
+        {/* === Connexion Spotify === */}
+        <Button
+          variant="success"
+          className="w-100"
+          onClick={handleSpotifyLogin}
+        >
+          🎵 Se connecter avec Spotify
         </Button>
-      </Form>
-
-      <hr />
-
-      <Button
-        variant="success"
-        className="w-100"
-        onClick={handleSpotifyLogin}
-      >
-        🎵 Se connecter avec Spotify
-      </Button>
+      </div>
     </div>
   );
 };

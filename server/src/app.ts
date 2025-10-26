@@ -1,25 +1,41 @@
-// server/src/app.ts
-import express from "express";
-import "reflect-metadata";
-import userRouter from "./modules/user/userRoute";
-import { errorMiddleware } from "./middlewares/error.middleware";
-import authController from "./modules/auth/authController";
-import spotifyController from "./modules/spotify/spotifyController";
+import 'reflect-metadata'
+import express from 'express'
+import cors from 'cors'
 
-const app = express();
+import { AppDataSource } from './dataSource'
+import spotifyController from './modules/spotify/spotifyController'
+import authController from './modules/auth/authController'
+import userRouter from './modules/user/userRoute'
+import adminController from './modules/admin/adminController'
+import { ErrorLog } from './modules/logs/errorLogEntity'
 
-app.use(express.json());
+const app = express()
 
-// ==========================
-// 📌 Routes principales
-// ==========================
-app.use("/api/users", userRouter);
-app.use("/api/auth", authController);
-app.use("/api/spotify", spotifyController);
+// Middlewares
+app.use(cors())
+app.use(express.json())
 
-// ==========================
-// 📌 Middleware global d’erreur
-// ==========================
-app.use(errorMiddleware);
+// Routes
+app.use('/spotify', spotifyController)
+app.use('/auth', authController)
+app.use('/users', userRouter)
+app.use('/admin', adminController)
 
-export default app;
+// Middleware global d’erreurs
+// Middleware global d’erreurs
+app.use(async (err: any, _req: any, res: any) => {
+  try {
+    const repo = AppDataSource.getRepository(ErrorLog)
+    await repo.save({
+      message: err.message ?? 'Unknown error',
+      stack: err.stack ?? '',
+    })
+  } catch {
+    // On ignore l'erreur de log pour éviter une boucle
+  }
+
+  res.status(500).json({
+    error: 'Erreur interne serveur',
+  })
+})
+export default app

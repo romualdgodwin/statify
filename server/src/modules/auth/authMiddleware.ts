@@ -1,70 +1,105 @@
-// server/src/middleware/authMiddleware.ts
-import { Request, Response, NextFunction } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
+// server/src/modules/auth/authMiddleware.ts
+import { Request, RequestHandler } from 'express'
+import jwt from 'jsonwebtoken'
 
-// 🔑 Clé secrète unique, doit être la même que dans authController
-const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_key";
-
-// ======================================================
-// 🔹 Typage du payload JWT
-// ======================================================
-export interface AuthPayload extends JwtPayload {
-  id: number;
-  role: string;
-  email?: string;
-}
+const JWT_SECRET =
+  process.env.JWT_SECRET || 'dev_secret_key'
 
 // ======================================================
-// 🔹 Extension de Express.Request pour ajouter req.user
+// Typage custom pour enrichir Request avec user
 // ======================================================
-declare module "express-serve-static-core" {
-  interface Request {
-    user?: AuthPayload;
+export interface AuthRequest extends Request {
+  user?: {
+    id: number
+    role: string
+    displayName?: string
+    email?: string
+    spotifyId?: string
   }
 }
 
 // ======================================================
-// 🔹 Middleware générique pour extraire le token
+// ✅ Middleware requireAuth : utilisateur connecté (JWT valide)
 // ======================================================
-function extractUserFromToken(req: Request, res: Response): AuthPayload | null {
-  const authHeader = req.headers.authorization;
+export const requireAuth: RequestHandler = (
+  req,
+  res,
+  next,
+) => {
+  const authHeader = req.headers.authorization
   if (!authHeader) {
-    res.status(401).json({ error: "Token manquant" });
-    return null;
+    res.status(401).json({ error: 'Token manquant' })
+    return
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = authHeader.split(' ')[1]
+  if (!token) {
+    res.status(401).json({ error: 'Token manquant' })
+    return
+  }
+
   try {
-    return jwt.verify(token, JWT_SECRET) as AuthPayload;
+    const decoded = jwt.verify(token, JWT_SECRET) as any
+    ;(req as AuthRequest).user = decoded
+    next()
   } catch {
-    res.status(401).json({ error: "Token invalide ou expiré" });
-    return null;
+    res
+      .status(403)
+      .json({ error: 'Token invalide ou expiré' })
   }
 }
 
 // ======================================================
-// 🔹 Vérifier que l’utilisateur est authentifié
+// ✅ Middleware requireAdmin : accès réservé aux admins
 // ======================================================
-export const requireAuth = (req: Request, res: Response, next: NextFunction): void => {
-  const decoded = extractUserFromToken(req, res);
-  if (!decoded) return;
-
-  req.user = decoded; // ✅ req.user typé
-  next();
-};
-
-// ======================================================
-// 🔹 Vérifier que l’utilisateur est admin
-// ======================================================
-export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  const decoded = extractUserFromToken(req, res);
-  if (!decoded) return;
-
-  if (decoded.role !== "admin") {
-    res.status(403).json({ error: "Accès réservé aux administrateurs" });
-    return;
+export const requireAdmin: RequestHandler = (
+  req,
+  res,
+  next,
+) => {
+  const user = (req as AuthRequest).user
+  if (!user) {
+    res
+      .status(401)
+      .json({ error: 'Utilisateur non authentifié' })
+    return
   }
 
-  req.user = decoded; // ✅ req.user typé
-  next();
-};
+  if (user.role !== 'admin') {
+    res
+      .status(403)
+      .json({ error: 'Accès réservé aux administrateurs' })
+    return
+  }
+
+  next()
+}
+
+// ======================================================
+// ✅ Middleware requireSpotifyUser : accès réservé aux logins Spotify
+// ======================================================
+export const requireSpotifyUser: RequestHandler = (
+  req,
+  res,
+  next,
+) => {
+  const user = (req as AuthRequest).user
+  if (!user) {
+    res
+      .status(401)
+      .json({ error: 'Utilisateur non authentifié' })
+    return
+  }
+
+  // On exige à la fois un rôle "user" ET un spotifyId
+  if (user.role !== 'user' || !user.spotifyId) {
+    res
+      .status(403)
+      .json({
+        error: 'Accès réservé aux utilisateurs Spotify',
+      })
+    return
+  }
+
+  next()
+}

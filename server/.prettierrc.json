@@ -1,5 +1,6 @@
 {
   "semi": false,
   "singleQuote": true,
-  "printWidth": 60
+  "printWidth": 60,
+  "endOfLine": "lf"
 }

@@ -1,15 +1,14 @@
-// client/src/App.tsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Home } from "./pages/Home";
-import { Plop } from "./pages/Plop";
 import { Users } from "./pages/Users";
 import { CreateUser } from "./pages/CreateUser";
 import { Login } from "./pages/Login";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
-import SpotifyCallback from "./pages/SpotifyCallback"; 
-import { MonCompte } from "./pages/MonCompte"; // ✅ Import de la page MonCompte
+import SpotifyCallback from "./pages/SpotifyCallback";
+import { MonCompte } from "./pages/MonCompte"; 
+import { SpotifyDashboard } from "./pages/SpotifyDashboard"; 
+import AdminDashboard from "./pages/AdminDashboard";
 
 export const App = () => {
   return (
@@ -17,18 +16,18 @@ export const App = () => {
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-
-            {/* ✅ Routes protégées */}
+            
+            {/* ✅ Dashboard utilisateur */}
             <Route
-              path="/plop"
+              path="/spotify-dashboard"
               element={
-                <ProtectedRoute>
-                  <Plop />
+                <ProtectedRoute role="user">
+                  <SpotifyDashboard />
                 </ProtectedRoute>
               }
             />
 
+            {/* ✅ Mon Compte */}
             <Route
               path="/mon-compte"
               element={
@@ -38,11 +37,38 @@ export const App = () => {
               }
             />
 
-            {/* ✅ Routes publiques */}
-            <Route path="/users" element={<Users />} />
-            <Route path="/createUser" element={<CreateUser />} />
+            {/* ✅ Admin */}
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute role="admin">
+                  <Users />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/createUser"
+              element={
+                <ProtectedRoute role="admin">
+                  <CreateUser />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin-dashboard"
+              element={
+                <ProtectedRoute role="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ✅ Auth */}
             <Route path="/login" element={<Login />} />
             <Route path="/spotify-callback" element={<SpotifyCallback />} />
+
+            {/* ✅ Catch-all */}
+            <Route path="*" element={<Login />} />
           </Route>
         </Routes>
       </BrowserRouter>

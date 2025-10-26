@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useAuth } from "../contexts/AuthContext"; // ✅ récupère le token
+import { useAuth } from "../contexts/AuthContext";
 
 type User = {
   id: number;
@@ -14,9 +14,8 @@ export const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { token } = useAuth(); // ✅ token depuis AuthContext
+  const { token } = useAuth();
 
-  // Charger les utilisateurs
   const fetchUsers = () => {
     setLoading(true);
     setError("");
@@ -38,7 +37,6 @@ export const Users = () => {
     fetchUsers();
   }, []);
 
-  // Supprimer un utilisateur
   const handleDelete = (id: number) => {
     if (window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) {
       axios
@@ -55,7 +53,6 @@ export const Users = () => {
     }
   };
 
-  // Modifier un utilisateur (changer rôle admin <-> user)
   const handleUpdate = (id: number, currentRole: string) => {
     const newRole = currentRole === "admin" ? "user" : "admin";
     axios
@@ -74,62 +71,76 @@ export const Users = () => {
   };
 
   return (
-    <div className="container mt-4">
-      <h1 className="mb-4">Liste des utilisateurs</h1>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center", // centre verticalement
+        alignItems: "center", // centre horizontalement
+        width: "100%",
+        minHeight: "80vh",
+        padding: "1rem",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: "900px" }}>
+        <h1 className="text-center mb-4">Liste des utilisateurs</h1>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+        {error && <div className="alert alert-danger">{error}</div>}
 
-      {loading ? (
-        <p>Chargement...</p>
-      ) : users.length === 0 ? (
-        <p>Aucun utilisateur trouvé.</p>
-      ) : (
-        <table className="table table-striped table-bordered">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Email</th>
-              <th>Rôle</th>
-              <th>Créé le</th>
-              <th>Mis à jour le</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.id}>
-                <td>{u.id}</td>
-                <td>{u.email}</td>
-                <td>
-                  <span
-                    className={`badge ${
-                      u.role === "admin" ? "bg-primary" : "bg-secondary"
-                    }`}
-                  >
-                    {u.role}
-                  </span>
-                </td>
-                <td>{u.createdAt ? new Date(u.createdAt).toLocaleString() : "-"}</td>
-                <td>{u.updatedAt ? new Date(u.updatedAt).toLocaleString() : "-"}</td>
-                <td>
-                  <button
-                    className="btn btn-sm btn-outline-info me-2"
-                    onClick={() => handleUpdate(u.id, u.role)}
-                  >
-                    Modifier rôle
-                  </button>
-                  <button
-                    className="btn btn-sm btn-outline-danger"
-                    onClick={() => handleDelete(u.id)}
-                  >
-                    Supprimer
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        {loading ? (
+          <p className="text-center">Chargement...</p>
+        ) : users.length === 0 ? (
+          <p className="text-center">Aucun utilisateur trouvé.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="table table-striped table-bordered text-center">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Email</th>
+                  <th>Rôle</th>
+                  <th>Créé le</th>
+                  <th>Mis à jour le</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.id}>
+                    <td>{u.id}</td>
+                    <td>{u.email}</td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          u.role === "admin" ? "bg-primary" : "bg-secondary"
+                        }`}
+                      >
+                        {u.role}
+                      </span>
+                    </td>
+                    <td>{u.createdAt ? new Date(u.createdAt).toLocaleString() : "-"}</td>
+                    <td>{u.updatedAt ? new Date(u.updatedAt).toLocaleString() : "-"}</td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-outline-info me-2"
+                        onClick={() => handleUpdate(u.id, u.role)}
+                      >
+                        Modifier rôle
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => handleDelete(u.id)}
+                      >
+                        Supprimer
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

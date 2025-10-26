@@ -5,7 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 export default function SpotifyCallback() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, token } = useAuth();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -13,19 +13,17 @@ export default function SpotifyCallback() {
     const spotifyAccessToken = params.get("spotifyAccessToken");
     const spotifyRefreshToken = params.get("spotifyRefreshToken");
 
-    if (appToken && spotifyAccessToken && spotifyRefreshToken) {
-      // ✅ Enregistre les tokens dans le AuthContext + localStorage
-      login(appToken, spotifyAccessToken, spotifyRefreshToken);
+    if (!token && appToken && spotifyAccessToken && spotifyRefreshToken) {
+      // ✅ Login via Spotify → on stocke tout
+      login(appToken, spotifyAccessToken, spotifyRefreshToken, "user");
 
-      // ✅ Redirection après enregistrement
-      setTimeout(() => {
-        navigate("/mon-compte"); // ✅ redirection vers MonCompte
-      }, 500);
-    } else {
-      // ❌ Tokens manquants → retour à la page login
+      // Redirection vers dashboard Spotify
+      navigate("/spotify-dashboard");
+    } else if (!appToken) {
+      // ⚠️ Pas de token → retour login
       navigate("/login");
     }
-  }, [login, navigate]);
+  }, [login, navigate]); // pas besoin de `token` en dépendance
 
   return (
     <div style={{ textAlign: "center", marginTop: "2rem" }}>

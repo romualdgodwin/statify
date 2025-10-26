@@ -1,10 +1,10 @@
-import { Button, Form } from "react-bootstrap"; 
+import { Button, Form } from "react-bootstrap";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import Joi from "joi";
 import { joiResolver } from "@hookform/resolvers/joi";
-import { useAuth } from "../contexts/AuthContext"; 
+import { useAuth } from "../contexts/AuthContext";
 
 type UserForm = {
   email: string;
@@ -33,7 +33,7 @@ export const CreateUser = () => {
     resolver: joiResolver(userFormSchema),
   });
 
-  const { token } = useAuth(); 
+  const { token } = useAuth();
   const navigate = useNavigate();
 
   const onSubmit = handleSubmit(async ({ isAdmin, email, password }) => {
@@ -54,7 +54,7 @@ export const CreateUser = () => {
 
       console.log("🎉 Utilisateur créé :", res.data);
       alert("Utilisateur créé avec succès !");
-      navigate("/users"); // ✅ redirection vers la liste après création
+      navigate("/users");
     } catch (err: any) {
       console.error("❌ Erreur création :", err.response || err);
       alert(
@@ -67,37 +67,49 @@ export const CreateUser = () => {
   });
 
   return (
-    <div className="container mt-5">
-      <h1>Créer un utilisateur</h1>
-      <Form onSubmit={onSubmit} className="w-50 mx-auto mt-4">
-        <Form.Group className="mb-3">
-          <Form.Label>Email</Form.Label>
-          <Form.Control placeholder="Enter email" {...register("email")} />
-          {errors.email && (
-            <div className="text-danger">{errors.email.message}</div>
-          )}
-        </Form.Group>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        width: "100%",
+        minHeight: "80vh",
+        padding: "1rem",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: "500px" }}>
+        <h1 className="text-center mb-4">Créer un utilisateur</h1>
+        <Form onSubmit={onSubmit}>
+          <Form.Group className="mb-3">
+            <Form.Label>Email</Form.Label>
+            <Form.Control placeholder="Enter email" {...register("email")} />
+            {errors.email && (
+              <div className="text-danger">{errors.email.message}</div>
+            )}
+          </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Password</Form.Label>
-          <Form.Control
-            type="password"
-            placeholder="Password"
-            {...register("password")}
-          />
-          {errors.password && (
-            <div className="text-danger">{errors.password.message}</div>
-          )}
-        </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Password</Form.Label>
+            <Form.Control
+              type="password"
+              placeholder="Password"
+              {...register("password")}
+            />
+            {errors.password && (
+              <div className="text-danger">{errors.password.message}</div>
+            )}
+          </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Check type="checkbox" label="Admin" {...register("isAdmin")} />
-        </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Check type="checkbox" label="Admin" {...register("isAdmin")} />
+          </Form.Group>
 
-        <Button variant="dark" type="submit" className="w-100">
-          Créer l’utilisateur
-        </Button>
-      </Form>
+          <Button variant="dark" type="submit" className="w-100">
+            Créer l’utilisateur
+          </Button>
+        </Form>
+      </div>
     </div>
   );
 };

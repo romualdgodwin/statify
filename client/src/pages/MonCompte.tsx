@@ -1,4 +1,3 @@
-// client/src/pages/MonCompte.tsx
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
@@ -64,64 +63,92 @@ export const MonCompte = () => {
     fetchSpotify();
   }, [token, spotifyAccessToken]);
 
-  // 🔹 Handler pour connecter Spotify
   const handleSpotifyLogin = () => {
     window.location.href = "http://localhost:3000/spotify/login";
   };
 
   return (
-    <div className="container mt-4">
-      <h2 className="mb-4 text-center">Mon Compte</h2>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center", // vertical
+        alignItems: "center",     // horizontal
+        width: "100%",
+        minHeight: "80vh",
+        padding: "1rem",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: "800px" }}>
+        <h2 className="mb-4 text-center">Mon Compte</h2>
 
-      <div className="row">
-        {/* Colonne gauche : infos locales */}
-        <div className="col-md-6 mb-3">
-          <div className="card shadow-sm p-3">
-            <h4 className="mb-3">Compte local</h4>
-            {isLoadingUser && <p>Chargement...</p>}
-            {errorUser && <div className="alert alert-danger">{errorUser}</div>}
-            {localUser && (
-              <ul className="list-unstyled">
-                <li><strong>ID :</strong> {localUser.id}</li>
-                <li><strong>Email :</strong> {localUser.email}</li>
-                <li><strong>Rôle :</strong> {localUser.role}</li>
-                <li><strong>Créé le :</strong> {new Date(localUser.createdAt).toLocaleString()}</li>
-                <li><strong>Mis à jour le :</strong> {new Date(localUser.updatedAt).toLocaleString()}</li>
-              </ul>
-            )}
-          </div>
-        </div>
+       <div className="row">
+  {/* Compte local */}
+  <div className="col-md-6 mb-3 d-flex justify-content-center">
+    <div
+      className="card shadow-sm p-3 text-white"
+      style={{
+        maxWidth: "350px",   // ✅ largeur max fixe
+        width: "100%",       // ✅ responsive
+        background: "rgba(24,24,24,0.9)",
+        borderRadius: "12px",
+      }}
+    >
+      <h4 className="mb-3">Compte local</h4>
+      {isLoadingUser && <p>Chargement...</p>}
+      {errorUser && <div className="alert alert-danger">{errorUser}</div>}
+      {localUser && (
+        <ul className="list-unstyled">
+          <li><strong>ID :</strong> {localUser.id}</li>
+          <li><strong>Email :</strong> {localUser.email}</li>
+          <li><strong>Rôle :</strong> {localUser.role}</li>
+          <li><strong>Créé le :</strong> {new Date(localUser.createdAt).toLocaleString()}</li>
+          <li><strong>Mis à jour le :</strong> {new Date(localUser.updatedAt).toLocaleString()}</li>
+        </ul>
+      )}
+    </div>
+  </div>
 
-        {/* Colonne droite : profil Spotify */}
-        <div className="col-md-6 mb-3">
-          <div className="card shadow-sm p-3 text-center">
-            <h4 className="mb-3">Profil Spotify</h4>
-            {isLoadingSpotify && <p>Chargement...</p>}
-            {errorSpotify && <div className="alert alert-danger">{errorSpotify}</div>}
-            {spotifyProfile ? (
-              <>
-                {spotifyProfile.images && spotifyProfile.images.length > 0 && (
-                  <img
-                    src={spotifyProfile.images[0].url}
-                    alt="Spotify avatar"
-                    width={120}
-                    className="rounded-circle mb-3 shadow"
-                  />
-                )}
-                <p><strong>Pseudo :</strong> {spotifyProfile.display_name}</p>
-                <p><strong>Email Spotify :</strong> {spotifyProfile.email}</p>
-                <p><strong>ID Spotify :</strong> {spotifyProfile.id}</p>
-              </>
-            ) : (
-              <>
-                <p className="text-muted mb-3">Pas encore connecté à Spotify 🎵</p>
-                <button className="btn btn-success" onClick={handleSpotifyLogin}>
-                  🎵 Connecter mon Spotify
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+  {/* Profil Spotify */}
+  <div className="col-md-6 mb-3 d-flex justify-content-center">
+    <div
+      className="card shadow-sm p-3 text-center text-white"
+      style={{
+        maxWidth: "350px",   // ✅ idem ici
+        width: "100%",
+        background: "rgba(24,24,24,0.9)",
+        borderRadius: "12px",
+      }}
+    >
+      <h4 className="mb-3">Profil Spotify</h4>
+      {isLoadingSpotify && <p>Chargement...</p>}
+      {errorSpotify && <div className="alert alert-danger">{errorSpotify}</div>}
+      {spotifyProfile ? (
+        <>
+          {spotifyProfile.images?.[0] && (
+            <img
+              src={spotifyProfile.images[0].url}
+              alt="Spotify avatar"
+              width={120}
+              className="rounded-circle mb-3 shadow"
+            />
+          )}
+          <p><strong>Pseudo :</strong> {spotifyProfile.display_name}</p>
+          <p><strong>Email Spotify :</strong> {spotifyProfile.email}</p>
+          <p><strong>ID Spotify :</strong> {spotifyProfile.id}</p>
+        </>
+      ) : (
+        <>
+          <p className="text-muted mb-3">Pas encore connecté à Spotify 🎵</p>
+          <button className="btn btn-success" onClick={handleSpotifyLogin}>
+            🎵 Connecter mon Spotify
+          </button>
+        </>
+      )}
+    </div>
+  </div>
+</div>
+
       </div>
     </div>
   );

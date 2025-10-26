@@ -3,50 +3,58 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
+  OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
-} from "typeorm";
+} from 'typeorm'
+import { UserHistory } from '../../userHistory/userHistoryEntity'
 
-@Entity("users") // ✅ éviter le mot réservé "user"
+@Entity('users') // ✅ Forcer le bon nom de table
 export class User {
   @PrimaryGeneratedColumn()
-  id!: number;
+  id!: number
 
-  // 🔹 Email ou login unique
-  @Column({ unique: true })
-  email!: string;
-
-  // 🔹 Nullable car un utilisateur Spotify peut ne pas avoir de mot de passe
-  @Column({ nullable: true })
-  password?: string;
-
-  @Column({ default: "user" })
-  role!: string;
-
-  // ==========================================================
-  // 🔹 Champs pour gestion Spotify OAuth
-  // ==========================================================
-  @Column({ nullable: true, unique: true })
-  spotifyId?: string;
+  @Column()
+  email!: string
 
   @Column({ nullable: true })
-  displayName?: string;
+  displayName?: string
 
-  @Column({ nullable: true, type: "text" })
-  spotifyAccessToken?: string;
+  @Column({ default: 'user' })
+  role!: string // "user" | "admin"
 
-  @Column({ nullable: true, type: "text" })
-  spotifyRefreshToken?: string;
+  @Column({ nullable: true })
+  spotifyId?: string
 
-  @Column({ nullable: true, type: "timestamptz" })
-  tokenExpiresAt?: Date;
+  @Column({ nullable: true })
+  spotifyAccessToken?: string
 
-  // ==========================================================
-  // 🔹 Tracking création / mise à jour
-  // ==========================================================
+  @Column({ nullable: true })
+  spotifyRefreshToken?: string
+
+  @Column({ type: 'timestamptz', nullable: true })
+  tokenExpiresAt?: Date
+
+  @Column({ type: 'timestamptz', nullable: true })
+  spotifyTokenExpiry?: Date
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lastLogin?: Date
+
+  // ✅ Mot de passe
+  @Column({ nullable: true })
+  password?: string
+
+  // ✅ Auto timestamps
   @CreateDateColumn()
-  createdAt!: Date;
+  createdAt!: Date
 
   @UpdateDateColumn()
-  updatedAt!: Date;
+  updatedAt!: Date
+
+  // ✅ Relation avec l’historique
+  @OneToMany(() => UserHistory, (history) => history.user, {
+    cascade: true,
+  })
+  histories!: UserHistory[]
 }
