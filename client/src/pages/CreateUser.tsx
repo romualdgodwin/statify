@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import Joi from "joi";
 import { joiResolver } from "@hookform/resolvers/joi";
-import { useAuth } from "../contexts/AuthContext"; // <-- récupère le token
+import { useAuth } from "../contexts/AuthContext"; 
 
 type UserForm = {
   email: string;
@@ -33,33 +33,30 @@ export const CreateUser = () => {
     resolver: joiResolver(userFormSchema),
   });
 
-  const { token } = useAuth(); // <-- récupère le token depuis le contexte
+  const { token } = useAuth(); 
   const navigate = useNavigate();
 
   const onSubmit = handleSubmit(async ({ isAdmin, email, password }) => {
-    console.log("✅ Formulaire soumis avec :", { email, password, isAdmin });
-    console.log("🔑 Token actuel :", token);
-
     try {
       const res = await axios.post(
         "http://localhost:3000/users",
         {
-          email, // ✅ backend attend "email"
+          email,
           password,
-          role: isAdmin ? "admin" : "user", // ✅ conversion bool -> string
+          role: isAdmin ? "admin" : "user",
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`, // <-- envoie le token
+            Authorization: `Bearer ${token}`,
           },
         }
       );
 
       console.log("🎉 Utilisateur créé :", res.data);
       alert("Utilisateur créé avec succès !");
-      navigate("/users");
+      navigate("/users"); // ✅ redirection vers la liste après création
     } catch (err: any) {
-      console.error("❌ Erreur lors de la création de l’utilisateur :", err.response || err);
+      console.error("❌ Erreur création :", err.response || err);
       alert(
         "Création échouée : " +
           (err.response?.status === 401

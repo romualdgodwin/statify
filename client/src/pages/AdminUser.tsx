@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useAuth } from "../contexts/AuthContext";
+
+// ✅ Instance axios centralisée
+const api = axios.create({ baseURL: "http://localhost:3000" });
 
 type User = {
   id: number;
@@ -10,9 +14,11 @@ type User = {
 };
 
 export const AdminUsers = () => {
+  const { token } = useAuth(); // ✅ utiliser AuthContext
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   // Création
   const [email, setEmail] = useState("");
@@ -25,13 +31,20 @@ export const AdminUsers = () => {
   const [editRole, setEditRole] = useState("user");
   const [editPassword, setEditPassword] = useState("");
 
+  // Ajout automatique du token dans toutes les requêtes
+  api.interceptors.request.use((config) => {
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  });
+
   // Charger les utilisateurs
   const fetchUsers = () => {
     setLoading(true);
-    axios
-      .get("http://localhost:3000/users/all", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      })
+    setError("");
+    api
+      .get("/users/all")
       .then((res) => setUsers(res.data))
       .catch((err) => {
         console.error("Erreur lors du chargement :", err);
@@ -41,22 +54,21 @@ export const AdminUsers = () => {
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (token) fetchUsers();
+  }, [token]);
 
   // Créer un utilisateur
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    axios
-      .post(
-        "http://localhost:3000/users",
-        { email, password, role },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-      )
+    setError("");
+    setSuccess("");
+    api
+      .post("/users", { email, password, role })
       .then(() => {
         setEmail("");
         setPassword("");
         setRole("user");
+        setSuccess("✅ Utilisateur créé avec succès !");
         fetchUsers();
       })
       .catch((err) => {
@@ -68,11 +80,14 @@ export const AdminUsers = () => {
   // Supprimer un utilisateur
   const handleDelete = (id: number) => {
     if (!window.confirm("Supprimer cet utilisateur ?")) return;
-    axios
-      .delete(`http://localhost:3000/users/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    setError("");
+    setSuccess("");
+    api
+      .delete(`/users/${id}`)
+      .then(() => {
+        setSuccess("✅ Utilisateur supprimé !");
+        fetchUsers();
       })
-      .then(() => fetchUsers())
       .catch((err) => {
         console.error("Erreur suppression :", err);
         setError("Impossible de supprimer l’utilisateur");
@@ -89,14 +104,17 @@ export const AdminUsers = () => {
 
   // Sauvegarder l’édition
   const handleUpdate = (id: number) => {
-    axios
-      .put(
-        `http://localhost:3000/users/${id}`,
-        { email: editEmail, role: editRole, password: editPassword || undefined },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-      )
+    setError("");
+    setSuccess("");
+    api
+      .put(`/users/${id}`, {
+        email: editEmail,
+        role: editRole,
+        password: editPassword || undefined,
+      })
       .then(() => {
         setEditingUserId(null);
+        setSuccess("✅ Utilisateur mis à jour !");
         fetchUsers();
       })
       .catch((err) => {
@@ -110,6 +128,7 @@ export const AdminUsers = () => {
       <h1>Gestion des utilisateurs 👥</h1>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
+      {success && <p style={{ color: "green" }}>{success}</p>}
 
       {/* Formulaire création */}
       <form onSubmit={handleCreate} style={{ marginBottom: "2rem" }}>

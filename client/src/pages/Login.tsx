@@ -30,7 +30,7 @@ export const Login = () => {
 
       setSuccess("Connexion réussie 🎉 Redirection...");
       setTimeout(() => {
-        navigate("/dashboard"); // ✅ redirection vers Dashboard
+        navigate("/mon-compte"); // ✅ redirection vers MonCompte
       }, 1500);
     } catch (err) {
       console.error("❌ Erreur de connexion :", err);

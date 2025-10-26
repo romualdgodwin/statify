@@ -3,9 +3,10 @@ import axios from "axios";
 
 export type User = {
   id: number;
-  login: string;
-  password: string;
-  role?: string;
+  email: string;  // ✅ au lieu de "login"
+  role: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export const useUsers = () => {
@@ -16,11 +17,12 @@ export const useUsers = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const data = (await axios.get("http://localhost:3000/users")).data;
+        const { data } = await axios.get<User[]>("http://localhost:3000/users");
         setUsers(data);
         setError(undefined);
       } catch (error: any) {
-        setError(error.message);
+        console.error("Erreur récupération utilisateurs:", error);
+        setError(error.message || "Erreur lors de la récupération des utilisateurs");
       } finally {
         setIsLoading(false);
       }

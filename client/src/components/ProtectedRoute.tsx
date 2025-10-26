@@ -3,12 +3,10 @@ import { useAuth } from "../contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
 export const ProtectedRoute = ({ children }: PropsWithChildren) => {
-  const { token } = useAuth();
+  const { token, spotifyAccessToken } = useAuth();
 
-  // Si pas de token, redirige vers /login
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-
+if (!token && !spotifyAccessToken) {
+  return <Navigate to="/login" replace />;
+}
   return children;
 };

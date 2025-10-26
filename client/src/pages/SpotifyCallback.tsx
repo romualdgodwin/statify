@@ -19,7 +19,7 @@ export default function SpotifyCallback() {
 
       // ✅ Redirection après enregistrement
       setTimeout(() => {
-        navigate("/dashboard"); // ✅ redirection vers Dashboard
+        navigate("/mon-compte"); // ✅ redirection vers MonCompte
       }, 500);
     } else {
       // ❌ Tokens manquants → retour à la page login
