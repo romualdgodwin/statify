@@ -1,9 +1,8 @@
 // client/src/pages/SpotifyDashboard.tsx
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
+import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
-import { Radar } from "react-chartjs-2";
-
 
 import {
   Container,
@@ -15,7 +14,8 @@ import {
   Image,
   Spinner,
 } from "react-bootstrap";
-import { Pie, Line, Bar } from "react-chartjs-2";
+
+import { Pie, Line, Bar, Radar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -27,8 +27,8 @@ import {
   LineElement,
   Filler,
   RadialLinearScale,
-  BarElement,   // ✅ Ajout
-  Title         // ✅ Ajout (optionnel)
+  BarElement,
+  Title,
 } from "chart.js";
 import { motion } from "framer-motion";
 
@@ -42,7 +42,7 @@ ChartJS.register(
   LineElement,
   Filler,
   RadialLinearScale,
-  BarElement,   // ✅ obligatoire pour <Bar />
+  BarElement,
   Title
 );
 
@@ -59,9 +59,9 @@ type SpotifyTrack = {
   name: string;
   artists: { name: string }[];
   album: { images?: { url: string }[] };
-  preview_url?: string; // ✅ extrait 30s
-  popularity: number;   // ✅ ajoute ça
-  duration_ms: number;  // ✅ utile aussi pour la durée moyenne
+  preview_url?: string;
+  popularity: number;
+  duration_ms: number;
 };
 
 type Badge = {
@@ -93,38 +93,41 @@ type SpotifyProfile = {
   images?: { url: string }[];
 };
 
+type CompareResponse = {
+  users: string[];
+  avgPopularity: number[];
+  genres: Record<string, number[]>;
+};
+
 export const SpotifyDashboard = () => {
   const { spotifyAccessToken, token } = useAuth();
-// ✅ Ajoute ces 2 états
+
+  // Préview audio
   const [currentPreview, setCurrentPreview] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-const [compareUsers, setCompareUsers] = useState<string[]>([]);
-const [comparePopularity, setComparePopularity] = useState<number[]>([]);
-const [compareGenres, setCompareGenres] = useState<Record<string, number[]>>({});
+
+  // Comparaison utilisateurs
+  const [compareUsers, setCompareUsers] = useState<string[]>([]);
+  const [comparePopularity, setComparePopularity] = useState<number[]>([]);
+  const [compareGenres, setCompareGenres] = useState<Record<string, number[]>>({});
 
   const handlePlayPreview = (previewUrl: string) => {
     if (currentPreview === previewUrl) {
-      // Si le même extrait est en cours → pause
       audioRef.current?.pause();
       setCurrentPreview(null);
     } else {
-      // Sinon → lancer nouvel extrait
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      if (audioRef.current) audioRef.current.pause();
       const audio = new Audio(previewUrl);
       audioRef.current = audio;
       audio.play();
       setCurrentPreview(previewUrl);
-
-      // Quand le son finit → reset
       audio.onended = () => setCurrentPreview(null);
     }
   };
+
+  // Loading / data
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<SpotifyProfile | null>(null);
-
-
 
   const [topArtists, setTopArtists] = useState<SpotifyArtist[]>([]);
   const [topTracks, setTopTracks] = useState<SpotifyTrack[]>([]);
@@ -134,23 +137,6 @@ const [compareGenres, setCompareGenres] = useState<Record<string, number[]>>({})
   const [query, setQuery] = useState("");
   const [devices, setDevices] = useState<any[]>([]);
 
-useEffect(() => {
-  const fetchDevices = async () => {
-    if (!spotifyAccessToken) return;
-    try {
-      const res = await axios.get("https://api.spotify.com/v1/me/player/devices", {
-        headers: { Authorization: `Bearer ${spotifyAccessToken}` },
-      });
-      setDevices(res.data.devices || []);
-    } catch (err) {
-      console.error("❌ Erreur devices Spotify:", err);
-    }
-  };
-
-  fetchDevices();
-}, [spotifyAccessToken]);
-
-
   const [artistLimit, setArtistLimit] = useState(5);
   const [trackLimit, setTrackLimit] = useState(5);
   const [activeTab, setActiveTab] = useState<"dashboard" | "stats">("dashboard");
@@ -158,6 +144,23 @@ useEffect(() => {
   const [monthlyStats, setMonthlyStats] = useState<{ label: string; value: number }[]>([]);
   const [badges, setBadges] = useState<string[]>([]);
 
+  // Devices → API Spotify directe (pas ton backend)
+  useEffect(() => {
+    const fetchDevices = async () => {
+      if (!spotifyAccessToken) return;
+      try {
+        const res = await axios.get("https://api.spotify.com/v1/me/player/devices", {
+          headers: { Authorization: `Bearer ${spotifyAccessToken}` },
+        });
+        setDevices(res.data.devices || []);
+      } catch (err) {
+        console.error("❌ Erreur devices Spotify:", err);
+      }
+    };
+    fetchDevices();
+  }, [spotifyAccessToken]);
+
+  // Fetch all backend data (passe uniquement par api)
   useEffect(() => {
     if (!spotifyAccessToken) {
       setLoading(false);
@@ -166,40 +169,44 @@ useEffect(() => {
 
     const fetchData = async () => {
       try {
-        const spotifyHeaders = { Authorization: `Bearer ${spotifyAccessToken}` };
-        const appHeaders = { Authorization: `Bearer ${token}` };
+        // Tout ce qui suit passe par ton BACKEND -> api.get/post...
+        const [
+          profileRes,
+          artistsRes,
+          tracksRes,
+          playlistsRes,
+          recentRes,
+          badgesResOrNull,
+          compareRes,
+          monthlyRes,
+        ] = await Promise.all([
+          api.get("/spotify/me"),
+          api.get("/spotify/top-artists"),
+          api.get("/spotify/top-tracks"),
+          api.get("/spotify/playlists"),
+          api.get("/spotify/recently-played"),
+          token ? api.get("/spotify/badges") : Promise.resolve(null),
+          api.get<CompareResponse>("/spotify/compare"),
+          api.get("/spotify/monthly-stats"),
+        ]);
 
-        const profileRes = await axios.get("http://localhost:3000/spotify/me", { headers: spotifyHeaders });
         setProfile(profileRes.data);
-
-        const artistsRes = await axios.get("http://localhost:3000/spotify/top-artists", { headers: spotifyHeaders });
         setTopArtists(artistsRes.data.items);
-
-        const tracksRes = await axios.get("http://localhost:3000/spotify/top-tracks", { headers: spotifyHeaders });
         setTopTracks(tracksRes.data.items);
-
-        const playlistsRes = await axios.get("http://localhost:3000/spotify/playlists", { headers: spotifyHeaders });
         setPlaylists(playlistsRes.data.items);
-
-        const recentRes = await axios.get("http://localhost:3000/spotify/recently-played", { headers: spotifyHeaders });
         setRecentPlays(recentRes.data.items);
 
-        if (token) {
-          const badgesRes = await axios.get("http://localhost:3000/spotify/badges", { headers: appHeaders });
-          setBadges(badgesRes.data.badges || []);
+        if (badgesResOrNull) {
+          setBadges(badgesResOrNull.data.badges || []);
         } else {
           setBadges([]);
         }
-        // Comparaison utilisateurs
-const compareRes = await axios.get("http://localhost:3000/spotify/compare");
-setCompareUsers(compareRes.data.users || []);
-setComparePopularity(compareRes.data.avgPopularity || []);
-setCompareGenres(compareRes.data.genres || {});
 
+        setCompareUsers(compareRes.data.users || []);
+        setComparePopularity(compareRes.data.avgPopularity || []);
+        setCompareGenres(compareRes.data.genres || {});
 
-        const monthlyRes = await axios.get("http://localhost:3000/spotify/monthly-stats", { headers: spotifyHeaders });
         setMonthlyStats(monthlyRes.data);
-
         setLoading(false);
       } catch (err) {
         console.error("❌ Erreur chargement Spotify :", err);
@@ -212,12 +219,12 @@ setCompareGenres(compareRes.data.genres || {});
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim() || !spotifyAccessToken) return;
+    if (!query.trim()) return;
 
     try {
-      const res = await axios.get("http://localhost:3000/spotify/search", {
+      // Recherche via TON BACKEND
+      const res = await api.get("/spotify/search", {
         params: { query, type: "track" },
-        headers: { Authorization: `Bearer ${spotifyAccessToken}` },
       });
       setSearchResults(res.data.tracks.items || []);
     } catch (err) {
@@ -225,51 +232,51 @@ setCompareGenres(compareRes.data.genres || {});
     }
   };
 
-  // Compter les types d'appareils
-const deviceCount: Record<string, number> = {};
-devices.forEach((d) => {
-  const type = d.type || "Autre";
-  deviceCount[type] = (deviceCount[type] || 0) + 1;
-});
+  // Compter les types d'appareils (UI)
+  const deviceCount: Record<string, number> = {};
+  devices.forEach((d) => {
+    const type = d.type || "Autre";
+    deviceCount[type] = (deviceCount[type] || 0) + 1;
+  });
 
-// Préparer les données
-const deviceData = {
-  labels: Object.keys(deviceCount),
-  datasets: [
-    {
-      label: "Appareils utilisés",
-      data: Object.values(deviceCount),
-      backgroundColor: ["#1DB954", "#ff4d6d", "#4da6ff", "#f1c40f", "#9b59b6", "#2ecc71"],
-      borderWidth: 1,
-    },
-  ],
-};
-// --- Popularité moyenne ---
-const popularityData = {
-  labels: compareUsers,
-  datasets: [
-    {
-      label: "Popularité moyenne des titres",
-      data: comparePopularity,
-      backgroundColor: ["#1DB954", "#3498db", "#e74c3c"],
-    },
-  ],
-};
+  const deviceData = {
+    labels: Object.keys(deviceCount),
+    datasets: [
+      {
+        label: "Appareils utilisés",
+        data: Object.values(deviceCount),
+        backgroundColor: ["#1DB954", "#ff4d6d", "#4da6ff", "#f1c40f", "#9b59b6", "#2ecc71"],
+        borderWidth: 1,
+      },
+    ],
+  };
 
-// --- Genres (stacked bar) ---
-const comparegenreLabels = compareUsers;
-const genreDatasets = Object.keys(compareGenres).map((genre, i) => ({
-  label: genre,
-  data: compareGenres[genre],
-  backgroundColor: ["#1DB954", "#e74c3c", "#3498db", "#f1c40f", "#9b59b6"][i % 5],
-}));
+  // Popularité moyenne (comparaison)
+  const popularityData = {
+    labels: compareUsers,
+    datasets: [
+      {
+        label: "Popularité moyenne des titres",
+        data: comparePopularity,
+        backgroundColor: ["#1DB954", "#3498db", "#e74c3c"],
+      },
+    ],
+  };
 
-const stackedGenreData = {
-  labels: comparegenreLabels,
-  datasets: genreDatasets,
-};
+  // Genres comparés (stacked)
+  const comparegenreLabels = compareUsers;
+  const genreDatasets = Object.keys(compareGenres).map((genre, i) => ({
+    label: genre,
+    data: compareGenres[genre],
+    backgroundColor: ["#1DB954", "#e74c3c", "#3498db", "#f1c40f", "#9b59b6"][i % 5],
+  }));
 
+  const stackedGenreData = {
+    labels: comparegenreLabels,
+    datasets: genreDatasets,
+  };
 
+  // Genres basés sur topArtists
   const genreCount: Record<string, number> = {};
   topArtists.forEach((a) => {
     a.genres?.forEach((g) => {
@@ -289,10 +296,8 @@ const stackedGenreData = {
     ],
   };
 
-  const hourData: { count: number; tracks: string[] }[] = Array.from(
-    { length: 24 },
-    () => ({ count: 0, tracks: [] })
-  );
+  // Heures d’écoute (recent plays)
+  const hourData: { count: number; tracks: string[] }[] = Array.from({ length: 24 }, () => ({ count: 0, tracks: [] }));
 
   recentPlays.forEach((play) => {
     const hour = new Date(play.played_at).getHours();
@@ -302,6 +307,7 @@ const stackedGenreData = {
     hourData[hour].tracks.push(`${trackName} – ${artists}`);
   });
 
+  // Helpers limites
   const nextLimit = (current: number) => (current === 5 ? 10 : current === 10 ? 30 : 30);
   const prevLimit = (current: number) => (current === 30 ? 10 : current === 10 ? 5 : 5);
 
@@ -321,7 +327,7 @@ const stackedGenreData = {
     backdropFilter: "blur(8px)",
     border: "1px solid rgba(255,255,255,0.1)",
     color: "#f0f0f0",
-  };
+  } as const;
 
   return (
     <div
@@ -396,27 +402,27 @@ const stackedGenreData = {
             <Card className="mb-4 p-3" style={glassCardStyle}>
               <h4 className="fw-bold text-success mb-3">🎤 Top artistes</h4>
               <Row>
-  {topArtists.slice(0, artistLimit).map((artist) => (
-    <Col key={artist.id} xs={6} md={4} lg={3} className="mb-3 text-center">
-      <motion.div
-        whileHover={{
-          scale: 1.05,
-          boxShadow: "0px 4px 15px rgba(29,185,84,0.6)", // halo vert
-        }}
-        transition={{ type: "spring", stiffness: 300 }}
-        style={{ borderRadius: "15px", padding: "10px" }}
-      >
-        <Image
-          src={artist.images?.[0]?.url || "https://via.placeholder.com/150"}
-          roundedCircle
-          fluid
-          style={{ width: "120px", height: "120px", objectFit: "cover" }}
-        />
-        <p className="mt-2 mb-0 fw-bold">{artist.name}</p>
-      </motion.div>
-    </Col>
-  ))}
-</Row>
+                {topArtists.slice(0, artistLimit).map((artist) => (
+                  <Col key={artist.id} xs={6} md={4} lg={3} className="mb-3 text-center">
+                    <motion.div
+                      whileHover={{
+                        scale: 1.05,
+                        boxShadow: "0px 4px 15px rgba(29,185,84,0.6)",
+                      }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                      style={{ borderRadius: "15px", padding: "10px" }}
+                    >
+                      <Image
+                        src={artist.images?.[0]?.url || "https://via.placeholder.com/150"}
+                        roundedCircle
+                        fluid
+                        style={{ width: "120px", height: "120px", objectFit: "cover" }}
+                      />
+                      <p className="mt-2 mb-0 fw-bold">{artist.name}</p>
+                    </motion.div>
+                  </Col>
+                ))}
+              </Row>
 
               <div className="d-flex justify-content-center">
                 <Button
@@ -438,362 +444,403 @@ const stackedGenreData = {
               </div>
             </Card>
 
-          {/* Top tracks */}
-<Card className="mb-4 p-3" style={glassCardStyle}>
-  <h4 className="fw-bold text-success mb-3">🎶 Top titres</h4>
-  <Row>
-    {topTracks.slice(0, trackLimit).map((track) => {
+            {/* Top tracks */}
+            <Card className="mb-4 p-3" style={glassCardStyle}>
+              <h4 className="fw-bold text-success mb-3">🎶 Top titres</h4>
+              <Row>
+                {topTracks.slice(0, trackLimit).map((track) => {
+                  return (
+                    <Col key={track.id} xs={6} md={4} lg={3} className="mb-3 text-center">
+                      <motion.div
+                        whileHover={{
+                          scale: 1.05,
+                          boxShadow: "0px 4px 15px rgba(29,185,84,0.6)",
+                        }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                        style={{ borderRadius: "15px", padding: "10px" }}
+                      >
+                        <Image
+                          src={track.album.images?.[0]?.url || "https://via.placeholder.com/150"}
+                          rounded
+                          fluid
+                          style={{ borderRadius: "15px" }}
+                        />
+                        <p className="mt-2 mb-0 fw-bold">{track.name}</p>
+                        <small className="text-muted">
+                          {track.artists.map((a) => a.name).join(", ")}
+                        </small>
 
-      return (
-        <Col
-          key={track.id}
-          xs={6}
-          md={4}
-          lg={3}
-          className="mb-3 text-center"
-        >
-          <motion.div
-            whileHover={{
-              scale: 1.05,
-              boxShadow: "0px 4px 15px rgba(29,185,84,0.6)",
-            }}
-            transition={{ type: "spring", stiffness: 300 }}
-            style={{ borderRadius: "15px", padding: "10px" }}
-          >
-            <Image
-              src={track.album.images?.[0]?.url || "https://via.placeholder.com/150"}
-              rounded
-              fluid
-              style={{ borderRadius: "15px" }}
-            />
-            <p className="mt-2 mb-0 fw-bold">{track.name}</p>
-            <small className="text-muted">
-              {track.artists.map((a) => a.name).join(", ")}
-            </small>
+                        {/* Bouton Play/Pause */}
+                        {track.preview_url ? (
+                          <Button
+                            variant={currentPreview === track.preview_url ? "danger" : "success"}
+                            size="sm"
+                            className="mt-2 rounded-pill"
+                            onClick={() => handlePlayPreview(track.preview_url!)}
+                          >
+                            {currentPreview === track.preview_url ? "⏸ Pause" : "▶️ Play"}
+                          </Button>
+                        ) : (
+                          <small className="text-muted d-block mt-2">
+                            Aucun extrait disponible
+                          </small>
+                        )}
+                      </motion.div>
+                    </Col>
+                  );
+                })}
+              </Row>
+              <div className="d-flex justify-content-center">
+                <Button
+                  size="sm"
+                  variant="outline-light"
+                  className="mx-1 rounded-pill"
+                  onClick={() => setTrackLimit(prevLimit(trackLimit))}
+                >
+                  -
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline-light"
+                  className="mx-1 rounded-pill"
+                  onClick={() => setTrackLimit(nextLimit(trackLimit))}
+                >
+                  +
+                </Button>
+              </div>
+            </Card>
 
-            {/* ✅ Bouton Play/Pause */}
-            {track.preview_url ? (
-              <Button
-                variant={currentPreview === track.preview_url ? "danger" : "success"}
-                size="sm"
-                className="mt-2 rounded-pill"
-                onClick={() => handlePlayPreview(track.preview_url!)}
-              >
-                {currentPreview === track.preview_url ? "⏸ Pause" : "▶️ Play"}
-              </Button>
-            ) : (
-              <small className="text-muted d-block mt-2">
-                Aucun extrait disponible
-              </small>
-            )}
-          </motion.div>
-        </Col>
-      );
-    })}
-  </Row>
-  <div className="d-flex justify-content-center">
-    <Button
-      size="sm"
-      variant="outline-light"
-      className="mx-1 rounded-pill"
-      onClick={() => setTrackLimit(prevLimit(trackLimit))}
-    >
-      -
-    </Button>
-    <Button
-      size="sm"
-      variant="outline-light"
-      className="mx-1 rounded-pill"
-      onClick={() => setTrackLimit(nextLimit(trackLimit))}
-    >
-      +
-    </Button>
-  </div>
-</Card>
+            {/* Playlists */}
+            <Card className="mb-4 p-3" style={glassCardStyle}>
+              <h4 className="fw-bold text-success mb-3">📂 Playlists</h4>
+              <Row>
+                {playlists.slice(0, 6).map((pl) => (
+                  <Col key={pl.id} xs={6} md={4} lg={3} className="mb-3 text-center">
+                    <motion.div
+                      whileHover={{
+                        scale: 1.05,
+                        boxShadow: "0px 4px 15px rgba(29,185,84,0.6)",
+                      }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                      style={{ borderRadius: "15px", padding: "10px" }}
+                    >
+                      <Image
+                        src={pl.images?.[0]?.url || "https://via.placeholder.com/150"}
+                        rounded
+                        fluid
+                        style={{ borderRadius: "15px" }}
+                      />
+                      <p className="mt-2 fw-bold">{pl.name}</p>
+                    </motion.div>
+                  </Col>
+                ))}
+              </Row>
+            </Card>
 
+            {/* Recherche */}
+            <Card className="mb-4 p-3" style={glassCardStyle}>
+              <h4 className="fw-bold text-success mb-3">🔎 Recherche</h4>
+              <Form onSubmit={handleSearch} className="d-flex mb-3">
+                <Form.Control
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Rechercher un titre"
+                  className="me-2"
+                />
+                <Button type="submit" variant="success" className="rounded-pill">
+                  Rechercher
+                </Button>
+              </Form>
+              <Row>
+                {searchResults.map((track) => (
+                  <Col key={track.id} xs={6} md={4} lg={3} className="mb-3 text-center">
+                    <motion.div
+                      whileHover={{
+                        scale: 1.05,
+                        boxShadow: "0px 4px 15px rgba(29,185,84,0.6)",
+                      }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                      style={{
+                        borderRadius: "15px",
+                        padding: "10px",
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                      }}
+                    >
+                      <Image
+                        src={track.album.images?.[0]?.url || "https://via.placeholder.com/150"}
+                        rounded
+                        fluid
+                        style={{ borderRadius: "15px" }}
+                      />
+                      <p className="mt-2 mb-0 fw-bold">{track.name}</p>
+                      <small className="text-muted">
+                        {track.artists.map((a: any) => a.name).join(", ")}
+                      </small>
 
-{/* Playlists */}
-<Card className="mb-4 p-3" style={glassCardStyle}>
-  <h4 className="fw-bold text-success mb-3">📂 Playlists</h4>
-  <Row>
-    {playlists.slice(0, 6).map((pl) => (
-      <Col
-        key={pl.id}
-        xs={6}
-        md={4}
-        lg={3}
-        className="mb-3 text-center"
-      >
-        <motion.div
-          whileHover={{
-            scale: 1.05,
-            boxShadow: "0px 4px 15px rgba(29,185,84,0.6)",
-          }}
-          transition={{ type: "spring", stiffness: 300 }}
-          style={{ borderRadius: "15px", padding: "10px" }}
-        >
-          <Image
-            src={pl.images?.[0]?.url || "https://via.placeholder.com/150"}
-            rounded
-            fluid
-            style={{ borderRadius: "15px" }}
-          />
-          <p className="mt-2 fw-bold">{pl.name}</p>
-        </motion.div>
-      </Col>
-    ))}
-  </Row>
-</Card>
-
-
-           {/* Recherche */}
-<Card className="mb-4 p-3" style={glassCardStyle}>
-  <h4 className="fw-bold text-success mb-3">🔎 Recherche</h4>
-  <Form onSubmit={handleSearch} className="d-flex mb-3">
-    <Form.Control
-      type="text"
-      value={query}
-      onChange={(e) => setQuery(e.target.value)}
-      placeholder="Rechercher un titre"
-      className="me-2"
-    />
-    <Button type="submit" variant="success" className="rounded-pill">
-      Rechercher
-    </Button>
-  </Form>
- <Row>
-  {searchResults.map((track) => (
-    <Col
-      key={track.id}
-      xs={6}
-      md={4}
-      lg={3}
-      className="mb-3 text-center"
-    >
-      <motion.div
-        whileHover={{
-          scale: 1.05,
-          boxShadow: "0px 4px 15px rgba(29,185,84,0.6)",
-        }}
-        transition={{ type: "spring", stiffness: 300 }}
-        style={{
-          borderRadius: "15px",
-          padding: "10px",
-          backgroundColor: "rgba(255,255,255,0.05)",
-        }}
-      >
-        <Image
-          src={track.album.images?.[0]?.url || "https://via.placeholder.com/150"}
-          rounded
-          fluid
-          style={{ borderRadius: "15px" }}
-        />
-        <p className="mt-2 mb-0 fw-bold">{track.name}</p>
-        <small className="text-muted">
-          {track.artists.map((a: any) => a.name).join(", ")}
-        </small>
-
-        {/* ✅ Bouton Play/Pause */}
-        {track.preview_url ? (
-          <Button
-            variant={currentPreview === track.preview_url ? "danger" : "success"}
-            size="sm"
-            className="mt-2 rounded-pill"
-            onClick={() => handlePlayPreview(track.preview_url)}
-          >
-            {currentPreview === track.preview_url ? "⏸ Pause" : "▶️ Play"}
-          </Button>
-        ) : (
-          <small className="text-muted d-block mt-2">
-            Aucun extrait disponible
-          </small>
-        )}
-      </motion.div>
-    </Col>
-  ))}
-</Row>
-
-</Card>
-
+                      {/* Bouton Play/Pause */}
+                      {track.preview_url ? (
+                        <Button
+                          variant={currentPreview === track.preview_url ? "danger" : "success"}
+                          size="sm"
+                          className="mt-2 rounded-pill"
+                          onClick={() => handlePlayPreview(track.preview_url)}
+                        >
+                          {currentPreview === track.preview_url ? "⏸ Pause" : "▶️ Play"}
+                        </Button>
+                      ) : (
+                        <small className="text-muted d-block mt-2">
+                          Aucun extrait disponible
+                        </small>
+                      )}
+                    </motion.div>
+                  </Col>
+                ))}
+              </Row>
+            </Card>
           </>
         )}
 
         {/* --- STATS --- */}
-{activeTab === "stats" && (
-  <>
-    <Row>
-      <Col md={6}>
-        <Card className="p-4 mb-4" style={glassCardStyle}>
-          <h4 className="fw-bold text-success mb-3">📊 Genres musicaux</h4>
-          <div style={{ maxWidth: "360px", margin: "0 auto" }}>
-            <Pie data={genreData} />
-          </div>
-        </Card>
-      </Col>
+        {activeTab === "stats" && (
+          <>
+            <Row>
+              <Col md={6}>
+                <Card className="p-4 mb-4" style={glassCardStyle}>
+                  <h4 className="fw-bold text-success mb-3">📊 Genres musicaux</h4>
+                  <div style={{ maxWidth: "360px", margin: "0 auto" }}>
+                    <Pie data={genreData} />
+                  </div>
+                </Card>
+              </Col>
 
-      <Col md={6}>
-        <Card className="p-4 mb-4" style={glassCardStyle}>
-          <h4 className="fw-bold text-success mb-3">⏰ Heures d'écoute</h4>
-          <Line
-            data={{
-              labels: Array.from({ length: 24 }, (_, i) => `${i}h`),
-              datasets: [
-                {
-                  label: "Titres joués",
-                  data: hourData.map((h) => h.count),
-                  fill: true,
-                  borderColor: "#1DB954",
-                  backgroundColor: "rgba(29,185,84,0.2)",
-                },
-              ],
-            }}
-          />
-        </Card>
-      </Col>
-    </Row>
-
-    <Row>
-      <Col md={6}>
-        <Card className="p-4 mb-4" style={glassCardStyle}>
-          <h4 className="fw-bold text-success mb-3">🎯 Répartition par popularité</h4>
-          <div style={{ maxWidth: "360px", margin: "0 auto" }}>
-            <Pie
-              data={{
-                labels: ["Très populaires (70+)", "Moyens (40-69)", "Confidentiels (<40)"],
-                datasets: [
-                  {
-                    data: [
-                      topTracks.filter((t) => t.popularity >= 70).length,
-                      topTracks.filter((t) => t.popularity >= 40 && t.popularity < 70).length,
-                      topTracks.filter((t) => t.popularity < 40).length,
-                    ],
-                    backgroundColor: ["#1DB954", "#f1c40f", "#e74c3c"],
-                  },
-                ],
-              }}
-            />
-          </div>
-        </Card>
-      </Col>
-
-      <Col md={6}>
-        <Card className="p-4 mb-4" style={glassCardStyle}>
-          <h4 className="fw-bold text-success mb-3">📅 Écoutes par jour (7 derniers jours)</h4>
-          <Line
-            data={{
-              labels: Array.from({ length: 7 }, (_, i) => {
-                const d = new Date();
-                d.setDate(d.getDate() - (6 - i));
-                return d.toLocaleDateString("fr-FR", { weekday: "short" });
-              }),
-              datasets: [
-                {
-                  label: "Titres joués",
-                  data: Array.from({ length: 7 }, (_, i) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - (6 - i));
-                    const dayKey = d.toISOString().split("T")[0];
-                    return recentPlays.filter(
-                      (p) => new Date(p.played_at).toISOString().split("T")[0] === dayKey
-                    ).length;
-                  }),
-                  fill: true,
-                  borderColor: "#1DB954",
-                  backgroundColor: "rgba(29,185,84,0.2)",
-                },
-              ],
-            }}
-          />
-        </Card>
-      </Col>
-    </Row>
-
-    <Row>
-      <Col md={6}>
-        <Card className="p-4 mb-4" style={glassCardStyle}>
-          <h4 className="fw-bold text-success mb-3">⏱️ Durée moyenne des titres</h4>
-          <div style={{ maxWidth: "500px", margin: "0 auto" }}>
-            <Bar
-              data={{
-                labels: ["Top Tracks", "Écoutes Récentes"],
-                datasets: [
-                  {
-                    label: "Durée moyenne (minutes)",
-                    data: [
-                      topTracks.length > 0
-                        ? topTracks.reduce((a, b) => a + (b as any).duration_ms, 0) /
-                          topTracks.length /
-                          60000
-                        : 0,
-                      recentPlays.length > 0
-                        ? recentPlays.reduce((a, b) => a + b.track.duration_ms, 0) /
-                          recentPlays.length /
-                          60000
-                        : 0,
-                    ],
-                    backgroundColor: ["#1DB954", "#3498db"],
-                  },
-                ],
-              }}
-              options={{
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: { color: "#f0f0f0" },
-                  },
-                  x: {
-                    ticks: { color: "#f0f0f0" },
-                  },
-                },
-                plugins: {
-                  legend: { labels: { color: "#f0f0f0" } },
-                },
-              }}
-            />
-          </div>
-        </Card>
-      </Col>
-
-      <Col md={6}>
-        <Card className="p-4 mb-4" style={glassCardStyle}>
-          <h4 className="fw-bold text-success mb-3">🏅 Mes Badges</h4>
-          <Row>
-            {ALL_BADGES.map((badge) => {
-              const unlocked = badges.includes(badge.label);
-
-              return (
-                <Col key={badge.key} xs={6} md={4} className="mb-3 text-center">
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className="p-3 rounded"
-                    style={{
-                      cursor: "pointer",
-                      border: unlocked ? "2px solid #1DB954" : "2px solid #333",
-                      background: unlocked
-                        ? "rgba(29,185,84,0.2)"
-                        : "rgba(255,255,255,0.05)",
-                      color: unlocked ? "#fff" : "#555",
-                      boxShadow: unlocked
-                        ? "0px 0px 20px rgba(29,185,84,0.8)"
-                        : "none",
-                      transition: "all 0.3s ease-in-out",
+              <Col md={6}>
+                <Card className="p-4 mb-4" style={glassCardStyle}>
+                  <h4 className="fw-bold text-success mb-3">⏰ Heures d'écoute</h4>
+                  <Line
+                    data={{
+                      labels: Array.from({ length: 24 }, (_, i) => `${i}h`),
+                      datasets: [
+                        {
+                          label: "Titres joués",
+                          data: hourData.map((h) => h.count),
+                          fill: true,
+                          borderColor: "#1DB954",
+                          backgroundColor: "rgba(29,185,84,0.2)",
+                        },
+                      ],
                     }}
-                    onClick={() => alert(`${badge.label} : ${badge.description}`)}
-                  >
-                    <div style={{ fontSize: "2rem" }}>{badge.icon}</div>
-                    <p className="fw-bold mt-2">{badge.label}</p>
-                  </motion.div>
-                </Col>
-              );
-            })}
-          </Row>
-        </Card>
-      </Col>
-    </Row>
-  </>
+                  />
+                </Card>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Card className="p-4 mb-4" style={glassCardStyle}>
+                  <h4 className="fw-bold text-success mb-3">🎯 Répartition par popularité</h4>
+                  <div style={{ maxWidth: "360px", margin: "0 auto" }}>
+                    <Pie
+                      data={{
+                        labels: ["Très populaires (70+)", "Moyens (40-69)", "Confidentiels (<40)"],
+                        datasets: [
+                          {
+                            data: [
+                              topTracks.filter((t) => t.popularity >= 70).length,
+                              topTracks.filter((t) => t.popularity >= 40 && t.popularity < 70).length,
+                              topTracks.filter((t) => t.popularity < 40).length,
+                            ],
+                            backgroundColor: ["#1DB954", "#f1c40f", "#e74c3c"],
+                          },
+                        ],
+                      }}
+                    />
+                  </div>
+                </Card>
+              </Col>
+
+              <Col md={6}>
+                <Card className="p-4 mb-4" style={glassCardStyle}>
+                  <h4 className="fw-bold text-success mb-3">📅 Écoutes par jour (7 derniers jours)</h4>
+                  <Line
+                    data={{
+                      labels: Array.from({ length: 7 }, (_, i) => {
+                        const d = new Date();
+                        d.setDate(d.getDate() - (6 - i));
+                        return d.toLocaleDateString("fr-FR", { weekday: "short" });
+                      }),
+                      datasets: [
+                        {
+                          label: "Titres joués",
+                          data: Array.from({ length: 7 }, (_, i) => {
+                            const d = new Date();
+                            d.setDate(d.getDate() - (6 - i));
+                            const dayKey = d.toISOString().split("T")[0];
+                            return recentPlays.filter(
+                              (p) => new Date(p.played_at).toISOString().split("T")[0] === dayKey
+                            ).length;
+                          }),
+                          fill: true,
+                          borderColor: "#1DB954",
+                          backgroundColor: "rgba(29,185,84,0.2)",
+                        },
+                      ],
+                    }}
+                  />
+                </Card>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Card className="p-4 mb-4" style={glassCardStyle}>
+                  <h4 className="fw-bold text-success mb-3">⏱️ Durée moyenne des titres</h4>
+                  <div style={{ maxWidth: "500px", margin: "0 auto" }}>
+                    <Bar
+                      data={{
+                        labels: ["Top Tracks", "Écoutes Récentes"],
+                        datasets: [
+                          {
+                            label: "Durée moyenne (minutes)",
+                            data: [
+                              topTracks.length > 0
+                                ? topTracks.reduce((a, b) => a + (b as any).duration_ms, 0) / topTracks.length / 60000
+                                : 0,
+                              recentPlays.length > 0
+                                ? recentPlays.reduce((a, b) => a + b.track.duration_ms, 0) / recentPlays.length / 60000
+                                : 0,
+                            ],
+                            backgroundColor: ["#1DB954", "#3498db"],
+                          },
+                        ],
+                      }}
+                      options={{
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            ticks: { color: "#f0f0f0" },
+                          },
+                          x: {
+                            ticks: { color: "#f0f0f0" },
+                          },
+                        },
+                        plugins: {
+                          legend: { labels: { color: "#f0f0f0" } },
+                        },
+                      }}
+                    />
+                  </div>
+                </Card>
+              </Col>
+{monthlyStats.length > 0 && (
+  <Card className="p-4 mb-4" style={glassCardStyle}>
+    <h4 className="fw-bold text-success mb-3">📆 Écoutes mensuelles</h4>
+    <Bar
+      data={{
+        labels: monthlyStats.map((s) => s.label),
+        datasets: [
+          {
+            label: "Nombre d'écoutes",
+            data: monthlyStats.map((s) => s.value),
+            backgroundColor: "#1DB954",
+          },
+        ],
+      }}
+    />
+  </Card>
 )}
+              <Col md={6}>
+                <Card className="p-4 mb-4" style={glassCardStyle}>
+                  <h4 className="fw-bold text-success mb-3">🏅 Mes Badges</h4>
+                  <Row>
+                    {ALL_BADGES.map((badge) => {
+                      const unlocked = badges.includes(badge.label);
+                      return (
+                        <Col key={badge.key} xs={6} md={4} className="mb-3 text-center">
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            className="p-3 rounded"
+                            style={{
+                              cursor: "pointer",
+                              border: unlocked ? "2px solid #1DB954" : "2px solid #333",
+                              background: unlocked ? "rgba(29,185,84,0.2)" : "rgba(255,255,255,0.05)",
+                              color: unlocked ? "#fff" : "#555",
+                              boxShadow: unlocked ? "0px 0px 20px rgba(29,185,84,0.8)" : "none",
+                              transition: "all 0.3s ease-in-out",
+                            }}
+                            onClick={() => alert(`${badge.label} : ${badge.description}`)}
+                          >
+                            <div style={{ fontSize: "2rem" }}>{badge.icon}</div>
+                            <p className="fw-bold mt-2">{badge.label}</p>
+                          </motion.div>
+                        </Col>
+                      );
+                    })}
+                  </Row>
+                </Card>
+              </Col>
+            </Row>
 
+            {/* Comparaisons */}
+            <Row>
+              <Col md={6}>
+                <Card className="p-4 mb-4" style={glassCardStyle}>
+                  <h4 className="fw-bold text-success mb-3">👥 Popularité moyenne (comparaison)</h4>
+                  <Bar data={popularityData} />
+                </Card>
+              </Col>
+              <Col md={6}>
+                <Card className="p-4 mb-4" style={glassCardStyle}>
+                  <h4 className="fw-bold text-success mb-3">🎼 Genres par utilisateur (stacked)</h4>
+                  <Bar
+                    data={stackedGenreData}
+                    options={{ responsive: true, plugins: { legend: { position: "top" as const } }, scales: { x: { stacked: true }, y: { stacked: true } } }}
+                  />
+                </Card>
+              </Col>
+            </Row>
 
+            {/* Devices */}
+            <Row>
+              <Col md={6}>
+                <Card className="p-4 mb-4" style={glassCardStyle}>
+                  <h4 className="fw-bold text-success mb-3">🖥️ Appareils utilisés</h4>
+                  <div style={{ maxWidth: "360px", margin: "0 auto" }}>
+                    <Pie data={deviceData} />
+                  </div>
+                </Card>
+              </Col>
+              <Col md={6}>
+                <Card className="p-4 mb-4" style={glassCardStyle}>
+                  <h4 className="fw-bold text-success mb-3">🧭 Radar (exemple visuel)</h4>
+                  <Radar
+                    data={{
+                      labels: ["Découverte", "Énergie", "Dansabilité", "Acoustique", "Instrumental", "Live"],
+                      datasets: [
+                        {
+                          label: "Moi",
+                          data: [65, 59, 90, 81, 56, 55],
+                          backgroundColor: "rgba(29,185,84,0.2)",
+                          borderColor: "#1DB954",
+                        },
+                        {
+                          label: "Moyenne",
+                          data: [28, 48, 40, 19, 96, 27],
+                          backgroundColor: "rgba(52,152,219,0.2)",
+                          borderColor: "#3498db",
+                        },
+                      ],
+                    }}
+                    options={{
+                      scales: { r: { angleLines: { color: "#555" }, grid: { color: "#333" }, pointLabels: { color: "#ddd" } } },
+                      plugins: { legend: { labels: { color: "#f0f0f0" } } },
+                    }}
+                  />
+                </Card>
+              </Col>
+            </Row>
+          </>
+        )}
       </Container>
     </div>
   );

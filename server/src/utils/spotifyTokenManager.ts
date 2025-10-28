@@ -2,7 +2,11 @@ import axios from 'axios'
 import querystring from 'querystring'
 import { AppDataSource } from '../dataSource'
 import { User } from '../modules/user/userEntity' // ✅
-import { config } from '../../config'
+import { config } from '../configs';
+
+
+
+
 
 const CLIENT_ID = config.spotify.clientId
 const CLIENT_SECRET = config.spotify.clientSecret

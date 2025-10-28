@@ -17,7 +17,6 @@ export const Header = ({ title }: HeaderProps) => {
   const { token, logout, spotifyAccessToken, role } = useAuth();
   const navigate = useNavigate();
   const [spotifyProfile, setSpotifyProfile] = useState<SpotifyProfile | null>(null);
-  const [visible, setVisible] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -29,22 +28,17 @@ export const Header = ({ title }: HeaderProps) => {
     const fetchSpotifyProfile = async () => {
       if (spotifyAccessToken) {
         try {
-          const res = await axios.get("http://localhost:3000/spotify/me", {
+          const res = await axios.get(`${import.meta.env.VITE_API_URL}/spotify/me`, {
             headers: { Authorization: `Bearer ${spotifyAccessToken}` },
           });
           setSpotifyProfile(res.data);
         } catch (err) {
-          console.error("Erreur récupération profil Spotify", err);
+          console.error("❌ Erreur récupération profil Spotify :", err);
         }
       }
     };
     fetchSpotifyProfile();
   }, [spotifyAccessToken]);
-
-  // Activer l’animation à l’apparition
-  useEffect(() => {
-    setVisible(true);
-  }, []);
 
   return (
     <Navbar
@@ -52,23 +46,23 @@ export const Header = ({ title }: HeaderProps) => {
       variant="dark"
       expand="lg"
       fixed="top"
-      className={`px-3 w-100 header-animate ${visible ? "visible" : ""}`}
+      className="px-3 w-100 shadow-sm"
     >
       {/* Logo / Titre */}
       <Navbar.Brand as={Link} to={role === "admin" ? "/users" : "/spotify-dashboard"}>
         {title}
       </Navbar.Brand>
 
-      {/* Toggle pour mobile */}
+      {/* Toggle mobile */}
       <Navbar.Toggle aria-controls="main-navbar-nav" />
       <Navbar.Collapse id="main-navbar-nav" className="justify-content-between">
         <Nav className="me-auto">
           {token && role === "admin" && (
             <>
+              <Nav.Link as={Link} to="/admin-dashboard">Dashboard Admin</Nav.Link>
               <Nav.Link as={Link} to="/users">Users</Nav.Link>
-              <Nav.Link as={Link} to="/createUser">Create User</Nav.Link>
-              <Nav.Link as={Link} to="/mon-compte">Compte</Nav.Link>
-              <Nav.Link as={Link} to="/spotify-dashboard">Spotify Dashboard</Nav.Link>
+              <Nav.Link as={Link} to="/create-user">Créer un utilisateur</Nav.Link>
+              <Nav.Link as={Link} to="/mon-compte">Mon Compte</Nav.Link>
             </>
           )}
 
@@ -88,11 +82,16 @@ export const Header = ({ title }: HeaderProps) => {
                 src={spotifyProfile?.images?.[0]?.url || "https://via.placeholder.com/32"}
                 roundedCircle
                 className="me-2"
-                alt="avatar"
+                alt={spotifyProfile?.display_name || "Avatar utilisateur"}
                 width={32}
                 height={32}
               />
-              <Button variant="outline-light" size="sm" onClick={handleLogout}>
+              <Button
+                variant="outline-light"
+                size="sm"
+                onClick={handleLogout}
+                aria-label="Déconnexion"
+              >
                 Déconnexion
               </Button>
             </>

@@ -11,11 +11,12 @@ import { UserHistory } from '../../userHistory/userHistoryEntity'
 import { generateBadges } from '../../services/badgeService'
 import { MoreThan, LessThan } from 'typeorm'
 import { refreshSpotifyData } from '../../services/spotifySyncService'
-import { requireAdmin } from '../auth/authMiddleware'
+import { requireAuth, requireAdmin } from '../auth/authMiddleware'
 
 const adminController = Router()
 
-// ✅ Appliquer requireAdmin à toutes les routes de ce contrôleur
+// ✅ On applique d'abord requireAuth puis requireAdmin
+adminController.use(requireAuth as RequestHandler)
 adminController.use(requireAdmin as RequestHandler)
 
 // ======================================================
@@ -23,7 +24,7 @@ adminController.use(requireAdmin as RequestHandler)
 // ======================================================
 adminController.get(
   '/stats/users',
-  async (_req: Request, res: Response) => {
+  (async (_req: Request, res: Response) => {
     try {
       const userRepo = AppDataSource.getRepository(User)
       const totalUsers = await userRepo.count()
@@ -40,7 +41,7 @@ adminController.get(
       console.error('❌ Erreur /admin/stats/users:', err)
       res.status(500).json({ error: 'Erreur serveur' })
     }
-  },
+  }) as RequestHandler,
 )
 
 // ======================================================
@@ -48,17 +49,16 @@ adminController.get(
 // ======================================================
 adminController.get(
   '/stats/plays',
-  async (_req: Request, res: Response) => {
+  (async (_req: Request, res: Response) => {
     try {
-      const historyRepo =
-        AppDataSource.getRepository(UserHistory)
+      const historyRepo = AppDataSource.getRepository(UserHistory)
       const totalPlays = await historyRepo.count()
       res.json({ totalPlays })
     } catch (err) {
       console.error('❌ Erreur /admin/stats/plays:', err)
       res.status(500).json({ error: 'Erreur serveur' })
     }
-  },
+  }) as RequestHandler,
 )
 
 // ======================================================
@@ -66,7 +66,7 @@ adminController.get(
 // ======================================================
 adminController.get(
   '/stats/badges',
-  async (_req: Request, res: Response) => {
+  (async (_req: Request, res: Response) => {
     try {
       const userRepo = AppDataSource.getRepository(User)
       const users = await userRepo.find()
@@ -83,7 +83,7 @@ adminController.get(
       console.error('❌ Erreur /admin/stats/badges:', err)
       res.status(500).json({ error: 'Erreur serveur' })
     }
-  },
+  }) as RequestHandler,
 )
 
 // ======================================================
@@ -91,7 +91,7 @@ adminController.get(
 // ======================================================
 adminController.post(
   '/refresh/:id',
-  async (req: Request, res: Response) => {
+  (async (req: Request, res: Response) => {
     try {
       const userRepo = AppDataSource.getRepository(User)
       const user = await userRepo.findOneBy({
@@ -99,9 +99,7 @@ adminController.post(
       })
 
       if (!user) {
-        res
-          .status(404)
-          .json({ error: 'Utilisateur introuvable' })
+        res.status(404).json({ error: 'Utilisateur introuvable' })
         return
       }
 
@@ -114,7 +112,7 @@ adminController.post(
       console.error('❌ Erreur /admin/refresh/:id:', err)
       res.status(500).json({ error: 'Erreur serveur' })
     }
-  },
+  }) as RequestHandler,
 )
 
 // ======================================================
@@ -122,7 +120,7 @@ adminController.post(
 // ======================================================
 adminController.get(
   '/tokens/expired',
-  async (_req, res) => {
+  (async (_req: Request, res: Response) => {
     try {
       const userRepo = AppDataSource.getRepository(User)
       const expired = await userRepo.find({
@@ -133,7 +131,7 @@ adminController.get(
       console.error('❌ Erreur /admin/tokens/expired:', err)
       res.status(500).json({ error: 'Erreur serveur' })
     }
-  },
+  }) as RequestHandler,
 )
 
 export default adminController

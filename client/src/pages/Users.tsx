@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api"; // ✅ utiliser l’axios centralisé
 
 type User = {
   id: number;
@@ -14,13 +13,12 @@ export const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { token } = useAuth();
 
   const fetchUsers = () => {
     setLoading(true);
     setError("");
-    axios
-      .get("http://localhost:3000/users")
+    api
+      .get<User[]>("/users") // ✅ plus besoin de headers, api.ts gère le token
       .then((res) => {
         setUsers(res.data);
       })
@@ -39,10 +37,8 @@ export const Users = () => {
 
   const handleDelete = (id: number) => {
     if (window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) {
-      axios
-        .delete(`http://localhost:3000/users/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+      api
+        .delete(`/users/${id}`) // ✅ pas besoin de headers ici non plus
         .then(() => {
           setUsers(users.filter((u) => u.id !== id));
         })
@@ -55,12 +51,8 @@ export const Users = () => {
 
   const handleUpdate = (id: number, currentRole: string) => {
     const newRole = currentRole === "admin" ? "user" : "admin";
-    axios
-      .put(
-        `http://localhost:3000/users/${id}`,
-        { role: newRole },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+    api
+      .put(`/users/${id}`, { role: newRole }) // ✅ token auto ajouté
       .then(() => {
         fetchUsers();
       })
@@ -75,8 +67,8 @@ export const Users = () => {
       style={{
         display: "flex",
         flexDirection: "column",
-        justifyContent: "center", // centre verticalement
-        alignItems: "center", // centre horizontalement
+        justifyContent: "center",
+        alignItems: "center",
         width: "100%",
         minHeight: "80vh",
         padding: "1rem",

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api"; // ✅ utilise ton axios centralisé
 
 export type User = {
   id: number;
-  email: string;  // ✅ au lieu de "login"
+  email: string;
   role: string;
   createdAt?: string;
   updatedAt?: string;
@@ -17,12 +17,12 @@ export const useUsers = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const { data } = await axios.get<User[]>("http://localhost:3000/users");
+        const { data } = await api.get<User[]>("/users"); // ✅ plus besoin du host
         setUsers(data);
         setError(undefined);
-      } catch (error: any) {
-        console.error("Erreur récupération utilisateurs:", error);
-        setError(error.message || "Erreur lors de la récupération des utilisateurs");
+      } catch (err: any) {
+        console.error("❌ Erreur récupération utilisateurs:", err);
+        setError(err.response?.data?.message || "Erreur lors de la récupération des utilisateurs");
       } finally {
         setIsLoading(false);
       }

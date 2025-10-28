@@ -1,18 +1,18 @@
 // ✅ Sauvegarde login interne
 export function saveAuthLogin(token: string) {
-  localStorage.setItem("token", token); // JWT interne
+  localStorage.setItem("app_token", token); // même clé que dans AuthContext
 }
 
 // ✅ Sauvegarde login Spotify
 export function saveSpotifyLogin(appToken: string, accessToken: string, refreshToken: string) {
-  localStorage.setItem("token", appToken); // JWT interne
-  localStorage.setItem("spotify_token_access", accessToken); // Spotify API access
-  localStorage.setItem("spotify_token_refresh", refreshToken); // Spotify refresh
+  localStorage.setItem("app_token", appToken); // même clé
+  localStorage.setItem("spotify_token_access", accessToken);
+  localStorage.setItem("spotify_token_refresh", refreshToken);
 }
 
 // ✅ Récupération des tokens
 export function getAppToken() {
-  return localStorage.getItem("token");
+  return localStorage.getItem("app_token"); // même clé
 }
 
 export function getSpotifyAccessToken() {

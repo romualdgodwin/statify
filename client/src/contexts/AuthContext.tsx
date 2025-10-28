@@ -7,6 +7,7 @@ type DecodedToken = {
   role: string;
   displayName?: string;
   email?: string;
+  spotifyId?: string;
   exp: number;
 };
 
@@ -20,7 +21,7 @@ type AuthContextType = {
     token: string,
     spotifyAccessToken?: string | null,
     spotifyRefreshToken?: string | null,
-    role?: string | null
+    role?: string | null            // ✅ ajouté
   ) => void;
   logout: () => void;
 };
@@ -50,12 +51,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const savedRole = localStorage.getItem(STORAGE_KEYS.role);
 
     if (savedToken) {
-      setToken(savedToken);
       try {
         const decoded = jwtDecode<DecodedToken>(savedToken);
+
+        if (decoded.exp * 1000 < Date.now()) {
+          logout();
+          return;
+        }
+
+        setToken(savedToken);
         setUserInfo(decoded);
+        setRole(decoded.role || null);
       } catch (err) {
         console.error("❌ Erreur décodage JWT au démarrage:", err);
+        logout();
       }
     }
 
@@ -64,26 +73,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (savedRole) setRole(savedRole);
   }, []);
 
-  // ✅ Méthode login → gère admin et Spotify
+  // ✅ Méthode login
   const login = (
     newToken: string,
     newSpotifyAccessToken: string | null = null,
     newSpotifyRefreshToken: string | null = null,
-    newRole: string | null = null
+    newRole: string | null = null              // ✅ ajouté
   ) => {
-    // --- JWT principal ---
     localStorage.setItem(STORAGE_KEYS.token, newToken);
     setToken(newToken);
 
     try {
       const decoded = jwtDecode<DecodedToken>(newToken);
+
+      if (decoded.exp * 1000 < Date.now()) {
+        logout();
+        return;
+      }
+
       setUserInfo(decoded);
+
+      // Si `role` est passé en paramètre → priorité sur celui du token
+      const roleToUse = newRole || decoded.role || null;
+      setRole(roleToUse);
+      if (roleToUse) localStorage.setItem(STORAGE_KEYS.role, roleToUse);
     } catch (err) {
       console.error("❌ Erreur décodage JWT:", err);
-      setUserInfo(null);
+      logout();
     }
 
-    // --- Tokens Spotify ---
     if (newSpotifyAccessToken) {
       localStorage.setItem(STORAGE_KEYS.spotifyAccess, newSpotifyAccessToken);
       setSpotifyAccessToken(newSpotifyAccessToken);
@@ -99,21 +117,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem(STORAGE_KEYS.spotifyRefresh);
       setSpotifyRefreshToken(null);
     }
-
-    // --- Role ---
-    if (newRole) {
-      localStorage.setItem(STORAGE_KEYS.role, newRole);
-      setRole(newRole);
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.role);
-      setRole(null);
-    }
   };
 
-  // Déconnexion → supprime tout
+  // Déconnexion
   const logout = () => {
     Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
-
     setToken(null);
     setSpotifyAccessToken(null);
     setSpotifyRefreshToken(null);

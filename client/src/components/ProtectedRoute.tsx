@@ -7,17 +7,19 @@ type ProtectedRouteProps = PropsWithChildren & {
 };
 
 export const ProtectedRoute = ({ children, role }: ProtectedRouteProps) => {
-  const { token, spotifyAccessToken, role: userRole } = useAuth();
+  const { token, role: userRole } = useAuth();
 
-  // Pas connecté → redirection login
-  if (!token && !spotifyAccessToken) {
+  // On se base uniquement sur le JWT interne
+  const isLoggedIn = Boolean(token);
+
+  if (!isLoggedIn) {
     return <Navigate to="/login" replace />;
   }
 
-  // Si un rôle est requis et que celui de l’utilisateur ne correspond pas → accès interdit
   if (role && userRole !== role) {
-    return <Navigate to="/" replace />; // ou une page "403 - Accès interdit"
+    // 🔒 Redirige si l'utilisateur n'a pas le bon rôle
+    return <Navigate to="/mon-compte" replace />;
   }
 
-  return children;
+  return <>{children}</>;
 };

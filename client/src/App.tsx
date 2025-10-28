@@ -10,7 +10,7 @@ import { MonCompte } from "./pages/MonCompte";
 import { SpotifyDashboard } from "./pages/SpotifyDashboard"; 
 import AdminDashboard from "./pages/AdminDashboard";
 
-export const App = () => {
+function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
@@ -47,7 +47,7 @@ export const App = () => {
               }
             />
             <Route
-              path="/createUser"
+              path="/create-user"
               element={
                 <ProtectedRoute role="admin">
                   <CreateUser />
@@ -74,4 +74,6 @@ export const App = () => {
       </BrowserRouter>
     </AuthProvider>
   );
-};
+}
+
+export default App;

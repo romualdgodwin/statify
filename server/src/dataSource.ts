@@ -1,3 +1,4 @@
+//dataSource.ts
 import { DataSource } from 'typeorm'
 import { User } from './modules/user/userEntity'
 import { UserHistory } from './userHistory/userHistoryEntity'
@@ -15,14 +16,3 @@ export const AppDataSource = new DataSource({
   entities: [User, UserHistory, Badge],
 })
 
-// Initialize connection immediately (only once, ex: in app.ts / main.ts)
-AppDataSource.initialize()
-  .then(() => {
-    console.log('📦 Database connected successfully')
-  })
-  .catch((error) => {
-    console.error(
-      '❌ Error during Data Source initialization',
-      error,
-    )
-  })

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Form, Button, Alert } from "react-bootstrap";
-import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import api from "../services/api";             // axios centralisé
+import { saveAuthLogin } from "../services/auth"; // sauvegarde token
 
 export const Login = () => {
   const { login } = useAuth();
@@ -12,40 +13,40 @@ export const Login = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Connexion classique (email/password)
+  // Connexion classique
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
     try {
-      const res = await axios.post("http://localhost:3000/auth/login", {
-        email,
-        password,
-      });
+      const res = await api.post("/auth/login", { email, password });
 
-      // ✅ Ici on n’a PAS de Spotify token → on passe null
-      login(res.data.token, null, null, res.data.role);
+      if (!res.data?.token) {
+        setError("Réponse invalide du serveur 🚨");
+        return;
+      }
+
+      // ✅ Sauvegarde et mise à jour du contexte
+      saveAuthLogin(res.data.token);
+      login(res.data.token, null, null, res.data.role ?? null);
 
       setSuccess("Connexion réussie 🎉 Redirection...");
 
       // ✅ Redirection selon rôle
       setTimeout(() => {
-        if (res.data.role === "admin") {
-          navigate("/admin-dashboard"); // 👉 tableau de bord admin
-        } else {
-          navigate("/spotify-dashboard"); // 👉 tableau de bord user
-        }
-      }, 1500);
-    } catch (err) {
-      console.error("❌ Erreur de connexion :", err);
+        navigate(res.data.role === "admin" ? "/admin-dashboard" : "/spotify-dashboard");
+      }, 1200);
+    } catch (err: any) {
+      console.error("❌ Erreur de connexion :", err.response?.data || err.message);
       setError("Échec de la connexion ❌ Vérifie ton email/mot de passe");
     }
   };
 
-  // Connexion via Spotify → redirection backend
+  // Connexion Spotify → redirection backend
   const handleSpotifyLogin = () => {
-    window.location.href = "http://localhost:3000/spotify/login";
+    window.location.href = `${import.meta.env.VITE_API_URL}/spotify/login`;
+    // ⚠️ ça lit ton .env (ex: VITE_API_URL=http://localhost:3000)
   };
 
   return (
@@ -53,10 +54,10 @@ export const Login = () => {
       style={{
         display: "flex",
         flexDirection: "column",
-        justifyContent: "center", 
-        alignItems: "center",     
+        justifyContent: "center",
+        alignItems: "center",
         width: "100%",
-        minHeight: "80vh",        
+        minHeight: "80vh",
         padding: "1rem",
       }}
     >
@@ -98,11 +99,7 @@ export const Login = () => {
         <hr />
 
         {/* === Connexion Spotify === */}
-        <Button
-          variant="success"
-          className="w-100"
-          onClick={handleSpotifyLogin}
-        >
+        <Button variant="success" className="w-100" onClick={handleSpotifyLogin}>
           🎵 Se connecter avec Spotify
         </Button>
       </div>

@@ -1,10 +1,9 @@
 import { Button, Form } from "react-bootstrap";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import Joi from "joi";
 import { joiResolver } from "@hookform/resolvers/joi";
-import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api"; // ✅ on utilise l’axios centralisé
 
 type UserForm = {
   email: string;
@@ -33,24 +32,15 @@ export const CreateUser = () => {
     resolver: joiResolver(userFormSchema),
   });
 
-  const { token } = useAuth();
   const navigate = useNavigate();
 
   const onSubmit = handleSubmit(async ({ isAdmin, email, password }) => {
     try {
-      const res = await axios.post(
-        "http://localhost:3000/users",
-        {
-          email,
-          password,
-          role: isAdmin ? "admin" : "user",
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await api.post("/users", {
+        email,
+        password,
+        role: isAdmin ? "admin" : "user",
+      });
 
       console.log("🎉 Utilisateur créé :", res.data);
       alert("Utilisateur créé avec succès !");

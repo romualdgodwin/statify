@@ -1,3 +1,4 @@
+// eslint.config.js
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
@@ -23,6 +24,10 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+
+      // ✅ Autoriser "any" sans erreur
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 )
+

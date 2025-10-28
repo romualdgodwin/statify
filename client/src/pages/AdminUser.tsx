@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api"; // ✅ utilise l’instance axios centralisée
 import { useAuth } from "../contexts/AuthContext";
-
-// ✅ Instance axios centralisée
-const api = axios.create({ baseURL: "http://localhost:3000" });
 
 type User = {
   id: number;
@@ -14,7 +11,7 @@ type User = {
 };
 
 export const AdminUsers = () => {
-  const { token } = useAuth(); // ✅ utiliser AuthContext
+  const { token } = useAuth(); // facultatif ici, car api.ts s’occupe du header
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -31,14 +28,6 @@ export const AdminUsers = () => {
   const [editRole, setEditRole] = useState("user");
   const [editPassword, setEditPassword] = useState("");
 
-  // Ajout automatique du token dans toutes les requêtes
-  api.interceptors.request.use((config) => {
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  });
-
   // Charger les utilisateurs
   const fetchUsers = () => {
     setLoading(true);
@@ -54,7 +43,7 @@ export const AdminUsers = () => {
   };
 
   useEffect(() => {
-    if (token) fetchUsers();
+    fetchUsers();
   }, [token]);
 
   // Créer un utilisateur
