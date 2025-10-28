@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import api from "../services/api"; // ✅ axios centralisé
 import { useAuth } from "../contexts/AuthContext";
 
@@ -19,7 +18,7 @@ type SpotifyProfile = {
 };
 
 export const MonCompte = () => {
-  const { spotifyAccessToken } = useAuth();
+  const { token } = useAuth(); // ✅ on prend l'appToken, pas spotifyAccessToken
   const [localUser, setLocalUser] = useState<LocalUser | null>(null);
   const [spotifyProfile, setSpotifyProfile] = useState<SpotifyProfile | null>(null);
 
@@ -33,7 +32,7 @@ export const MonCompte = () => {
     const fetchUser = async () => {
       setIsLoadingUser(true);
       try {
-        const res = await api.get("/users/me"); // ✅ passe par api.ts → JWT auto ajouté
+        const res = await api.get("/users/me"); // ✅ JWT auto ajouté
         setLocalUser(res.data);
       } catch {
         setErrorUser("Impossible de récupérer les infos utilisateur");
@@ -43,13 +42,11 @@ export const MonCompte = () => {
     };
 
     const fetchSpotify = async () => {
-      if (!spotifyAccessToken) return;
+      if (!token) return;
       setIsLoadingSpotify(true);
       try {
-        // ⚠️ Ici on doit passer le vrai accessToken Spotify
-        const res = await axios.get("http://localhost:3000/spotify/me", {
-          headers: { Authorization: `Bearer ${spotifyAccessToken}` },
-        });
+        // ✅ maintenant on passe par notre backend qui gère le refresh
+        const res = await api.get("/spotify/me");
         setSpotifyProfile(res.data);
       } catch {
         setErrorSpotify("Impossible de récupérer les infos Spotify");
@@ -60,7 +57,7 @@ export const MonCompte = () => {
 
     fetchUser();
     fetchSpotify();
-  }, [spotifyAccessToken]);
+  }, [token]);
 
   const handleSpotifyLogin = () => {
     window.location.href = "http://localhost:3000/spotify/login";

@@ -42,7 +42,6 @@ export const requireAuth: RequestHandler = (req, res, next): void => {
     res.status(401).json({ error: 'Token manquant' });
     return;
   }
-  console.log("🔑 Vérification du token:", token, "SECRET utilisé:", JWT_SECRET);
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET!) as AuthUser;

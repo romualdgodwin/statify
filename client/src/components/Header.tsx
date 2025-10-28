@@ -14,7 +14,8 @@ type SpotifyProfile = {
 };
 
 export const Header = ({ title }: HeaderProps) => {
-  const { token, logout, spotifyAccessToken, role } = useAuth();
+  // ⚡️ On prend bien `token` (appToken JWT interne), pas `spotifyAccessToken`
+  const { token, logout, role } = useAuth();
   const navigate = useNavigate();
   const [spotifyProfile, setSpotifyProfile] = useState<SpotifyProfile | null>(null);
 
@@ -23,13 +24,13 @@ export const Header = ({ title }: HeaderProps) => {
     navigate("/login");
   };
 
-  // Charger le profil Spotify si connecté
+  // Charger le profil Spotify via backend sécurisé
   useEffect(() => {
     const fetchSpotifyProfile = async () => {
-      if (spotifyAccessToken) {
+      if (token) {
         try {
           const res = await axios.get(`${import.meta.env.VITE_API_URL}/spotify/me`, {
-            headers: { Authorization: `Bearer ${spotifyAccessToken}` },
+            headers: { Authorization: `Bearer ${token}` }, // ✅ JWT interne
           });
           setSpotifyProfile(res.data);
         } catch (err) {
@@ -38,7 +39,7 @@ export const Header = ({ title }: HeaderProps) => {
       }
     };
     fetchSpotifyProfile();
-  }, [spotifyAccessToken]);
+  }, [token]);
 
   return (
     <Navbar
