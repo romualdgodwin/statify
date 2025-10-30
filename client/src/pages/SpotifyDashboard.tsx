@@ -1,5 +1,5 @@
 // client/src/pages/SpotifyDashboard.tsx
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef} from "react"; 
 import axios from "axios";
 import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -15,7 +15,7 @@ import {
   Spinner,
 } from "react-bootstrap";
 
-import { Pie, Line, Bar, Radar } from "react-chartjs-2";
+import { Pie, Line, Bar} from "react-chartjs-2";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -143,6 +143,20 @@ export const SpotifyDashboard = () => {
 
   const [monthlyStats, setMonthlyStats] = useState<{ label: string; value: number }[]>([]);
   const [badges, setBadges] = useState<string[]>([]);
+  
+  // ✅ Nouveau : daily stats
+  const [dailyLabels, setDailyLabels] = useState<string[]>([]);
+  const [dailyValues, setDailyValues] = useState<number[]>([]);
+  // Mapping Spotify -> Catégories personnalisées
+const deviceTypeMap: Record<string, string> = {
+  Smartphone: "Téléphone",
+  Computer: "Ordinateur",
+  Tablet: "Télé",
+  TV: "Télé",
+  GameConsole: "Console",
+  Wearable: "Montre",
+};
+
 
   // Devices → API Spotify directe (pas ton backend)
   useEffect(() => {
@@ -171,30 +185,39 @@ export const SpotifyDashboard = () => {
       try {
         // Tout ce qui suit passe par ton BACKEND -> api.get/post...
         const [
-          profileRes,
-          artistsRes,
-          tracksRes,
-          playlistsRes,
-          recentRes,
-          badgesResOrNull,
-          compareRes,
-          monthlyRes,
-        ] = await Promise.all([
-          api.get("/spotify/me"),
-          api.get("/spotify/top-artists"),
-          api.get("/spotify/top-tracks"),
-          api.get("/spotify/playlists"),
-          api.get("/spotify/recently-played"),
-          token ? api.get("/spotify/badges") : Promise.resolve(null),
-          api.get<CompareResponse>("/spotify/compare"),
-          api.get("/spotify/monthly-stats"),
-        ]);
+  profileRes,
+  artistsRes,
+  tracksRes,
+  playlistsRes,
+  recentRes,
+  badgesResOrNull,
+  compareRes,
+  monthlyRes,
+  dailyRes, // 👈 ajout
+] = await Promise.all([
+  api.get("/spotify/me"),
+  api.get("/spotify/top-artists"),
+  api.get("/spotify/top-tracks"),
+  api.get("/spotify/playlists"),
+  api.get("/spotify/recently-played"),
+  token ? api.get("/spotify/badges") : Promise.resolve(null),
+  api.get<CompareResponse>("/spotify/compare"),
+  api.get("/spotify/monthly-stats"),
+  api.get("/spotify/daily-stats"), // 👈 ajout
+]);
+
 
         setProfile(profileRes.data);
         setTopArtists(artistsRes.data.items);
         setTopTracks(tracksRes.data.items);
         setPlaylists(playlistsRes.data.items);
-        setRecentPlays(recentRes.data.items);
+        setRecentPlays(recentRes.data.items || recentRes.data.data || recentRes.data || []);
+        setDailyLabels(dailyRes.data.labels);
+        setDailyValues(dailyRes.data.values);
+
+        console.log("🎵 recentPlays backend:", recentRes.data); // debug
+
+
 
         if (badgesResOrNull) {
           setBadges(badgesResOrNull.data.badges || []);
@@ -239,17 +262,8 @@ export const SpotifyDashboard = () => {
     deviceCount[type] = (deviceCount[type] || 0) + 1;
   });
 
-  const deviceData = {
-    labels: Object.keys(deviceCount),
-    datasets: [
-      {
-        label: "Appareils utilisés",
-        data: Object.values(deviceCount),
-        backgroundColor: ["#1DB954", "#ff4d6d", "#4da6ff", "#f1c40f", "#9b59b6", "#2ecc71"],
-        borderWidth: 1,
-      },
-    ],
-  };
+
+
 
   // Popularité moyenne (comparaison)
   const popularityData = {
@@ -277,35 +291,110 @@ export const SpotifyDashboard = () => {
   };
 
   // Genres basés sur topArtists
-  const genreCount: Record<string, number> = {};
-  topArtists.forEach((a) => {
-    a.genres?.forEach((g) => {
-      genreCount[g] = (genreCount[g] || 0) + 1;
-    });
-  });
-  const genreLabels = Object.keys(genreCount).slice(0, 6);
-  const genreValues = Object.values(genreCount).slice(0, 6);
-  const genreData = {
-    labels: genreLabels,
-    datasets: [
-      {
-        data: genreValues,
-        backgroundColor: ["#1DB954", "#ff4d6d", "#4da6ff", "#f1c40f", "#9b59b6", "#95a5a6"],
-        borderWidth: 0,
-      },
-    ],
-  };
+ // Associer chaque artiste à un seul genre (le premier)
+const genreArtists: Record<string, string[]> = {};
 
-  // Heures d’écoute (recent plays)
-  const hourData: { count: number; tracks: string[] }[] = Array.from({ length: 24 }, () => ({ count: 0, tracks: [] }));
+topArtists.forEach((a) => {
+  if (!a.genres || a.genres.length === 0) return;
 
-  recentPlays.forEach((play) => {
-    const hour = new Date(play.played_at).getHours();
-    const trackName = play.track?.name || "Titre inconnu";
-    const artists = play.track?.artists?.map((a: any) => a.name).join(", ") || "Artiste inconnu";
+  const mainGenre = a.genres[0]; // ✅ on prend le premier genre comme "principal"
+  if (!genreArtists[mainGenre]) genreArtists[mainGenre] = [];
+  genreArtists[mainGenre].push(a.name);
+});
+
+// Construire counts
+const genreLabels = Object.keys(genreArtists).slice(0, 6);
+const genreValues = genreLabels.map((g) => genreArtists[g].length);
+
+const genreData = {
+  labels: genreLabels,
+  datasets: [
+    {
+      data: genreValues,
+      backgroundColor: ["#1DB954", "#ff4d6d", "#4da6ff", "#f1c40f", "#9b59b6", "#95a5a6"],
+      borderWidth: 0,
+    },
+  ],
+};
+
+
+  const hourData: { count: number; tracks: string[] }[] =
+  Array.from({ length: 24 }, () => ({ count: 0, tracks: [] }));
+
+recentPlays.forEach((play) => {
+  if (!play) return; // si null / undefined
+  if (!play.played_at) return; // si pas de date
+
+  const playedDate = new Date(play.played_at);
+  if (isNaN(playedDate.getTime())) return; // si date invalide
+
+  const hour = playedDate.getHours();
+
+  if (hour >= 0 && hour < 24 && hourData[hour]) {
+    const trackName =
+      play.track?.name || play.name || "Titre inconnu";
+
+    const artists =
+      play.track?.artists?.map((a: any) => a.name).join(", ") ||
+      play.artists?.map((a: any) => a.name).join(", ") ||
+      "Artiste inconnu";
+
     hourData[hour].count++;
     hourData[hour].tracks.push(`${trackName} – ${artists}`);
-  });
+  }
+});
+
+const devicePlayCount: Record<string, number> = {
+  Téléphone: 0,
+  Télé: 0,
+  Montre: 0,
+  Ordinateur: 0,
+  Console: 0,
+};
+
+recentPlays.forEach((play) => {
+  const rawType = play.deviceType || play.device?.type || "Ordinateur"; // fallback
+  const mapped = deviceTypeMap[rawType] || "Ordinateur";
+  devicePlayCount[mapped] = (devicePlayCount[mapped] || 0) + 1;
+});
+
+// Distribution par durée (écoutes récentes)
+const durationBuckets = {
+  "0–2 min": 0,
+  "2–4 min": 0,
+  "4–6 min": 0,
+  "+6 min": 0,
+};
+
+recentPlays.forEach((play) => {
+  const ms = play.durationMs ?? play.track?.duration_ms ?? 0;
+  const min = ms / 60000;
+  if (min <= 2) durationBuckets["0–2 min"]++;
+  else if (min <= 4) durationBuckets["2–4 min"]++;
+  else if (min <= 6) durationBuckets["4–6 min"]++;
+  else durationBuckets["+6 min"]++;
+});
+
+
+const deviceData = {
+  labels: Object.keys(devicePlayCount),
+  datasets: [
+    {
+      label: "Nombre de titres écoutés",
+      data: Object.values(devicePlayCount),
+      backgroundColor: [
+        "#1DB954", // Vert Spotify
+        "#3498db", // Bleu
+        "#9b59b6", // Violet
+        "#f1c40f", // Jaune
+        "#e74c3c", // Rouge
+      ],
+      borderColor: "#121212",
+      borderWidth: 2,
+    },
+  ],
+};
+
 
   // Helpers limites
   const nextLimit = (current: number) => (current === 5 ? 10 : current === 10 ? 30 : 30);
@@ -601,246 +690,293 @@ export const SpotifyDashboard = () => {
           </>
         )}
 
-        {/* --- STATS --- */}
-        {activeTab === "stats" && (
-          <>
-            <Row>
-              <Col md={6}>
-                <Card className="p-4 mb-4" style={glassCardStyle}>
-                  <h4 className="fw-bold text-success mb-3">📊 Genres musicaux</h4>
-                  <div style={{ maxWidth: "360px", margin: "0 auto" }}>
-                    <Pie data={genreData} />
-                  </div>
-                </Card>
-              </Col>
+      {/* --- STATS --- */}
+{activeTab === "stats" && (
+  <>
+    {/* Ligne 1 : Genres + Popularité */}
+    <Row>
+      <Col md={6}>
+        <Card className="p-4 mb-4" style={glassCardStyle}>
+          <h4 className="fw-bold text-success mb-3">📊 Genres musicaux</h4>
+          <div style={{ maxWidth: "360px", margin: "0 auto" }}>
+            <Pie
+              data={genreData}
+              options={{
+                plugins: {
+                  tooltip: {
+                    callbacks: {
+                      label: (context) => {
+                        const genre = context.label || "";
+                        const artists = genreArtists[genre] || [];
+                        const top5 = artists.slice(0, 5);
+                        return [`${genre}: ${context.raw} artistes`, ...top5];
+                      },
+                    },
+                  },
+                  legend: {
+                    labels: {
+                      color: "#f0f0f0",
+                      font: { size: 14, weight: "bold" },
+                    },
+                  },
+                },
+              }}
+            />
+          </div>
+        </Card>
+      </Col>
 
-              <Col md={6}>
-                <Card className="p-4 mb-4" style={glassCardStyle}>
-                  <h4 className="fw-bold text-success mb-3">⏰ Heures d'écoute</h4>
-                  <Line
-                    data={{
-                      labels: Array.from({ length: 24 }, (_, i) => `${i}h`),
-                      datasets: [
-                        {
-                          label: "Titres joués",
-                          data: hourData.map((h) => h.count),
-                          fill: true,
-                          borderColor: "#1DB954",
-                          backgroundColor: "rgba(29,185,84,0.2)",
-                        },
-                      ],
-                    }}
-                  />
-                </Card>
-              </Col>
-            </Row>
+      <Col md={6}>
+        <Card className="p-4 mb-4" style={glassCardStyle}>
+          <h4 className="fw-bold text-success mb-3">🎯 Popularité de tes Top Tracks</h4>
+          <div style={{ maxWidth: "360px", margin: "0 auto" }}>
+            <Pie
+              data={{
+                labels: ["Très populaires (70+)", "Moyens (40-69)", "Confidentiels (<40)"],
+                datasets: [
+                  {
+                    data: [
+                      topTracks.filter((t) => t.popularity >= 70).length,
+                      topTracks.filter((t) => t.popularity >= 40 && t.popularity < 70).length,
+                      topTracks.filter((t) => t.popularity < 40).length,
+                    ],
+                    backgroundColor: ["#1DB954", "#f1c40f", "#e74c3c"],
+                  },
+                ],
+              }}
+              options={{
+                plugins: {
+                  tooltip: {
+                    callbacks: {
+                      label: (context) => {
+                        const idx = context.dataIndex;
+                        let tracks: string[] = [];
+                        if (idx === 0) {
+                          tracks = topTracks
+                            .filter((t) => t.popularity >= 70)
+                            .slice(0, 5)
+                            .map((t) => `${t.name} – ${t.artists.map((a) => a.name).join(", ")}`);
+                        } else if (idx === 1) {
+                          tracks = topTracks
+                            .filter((t) => t.popularity >= 40 && t.popularity < 70)
+                            .slice(0, 5)
+                            .map((t) => `${t.name} – ${t.artists.map((a) => a.name).join(", ")}`);
+                        } else {
+                          tracks = topTracks
+                            .filter((t) => t.popularity < 40)
+                            .slice(0, 5)
+                            .map((t) => `${t.name} – ${t.artists.map((a) => a.name).join(", ")}`);
+                        }
+                        return tracks;
+                      },
+                    },
+                  },
+                },
+              }}
+            />
+          </div>
+        </Card>
+      </Col>
+    </Row>
 
-            <Row>
-              <Col md={6}>
-                <Card className="p-4 mb-4" style={glassCardStyle}>
-                  <h4 className="fw-bold text-success mb-3">🎯 Répartition par popularité</h4>
-                  <div style={{ maxWidth: "360px", margin: "0 auto" }}>
-                    <Pie
-                      data={{
-                        labels: ["Très populaires (70+)", "Moyens (40-69)", "Confidentiels (<40)"],
-                        datasets: [
-                          {
-                            data: [
-                              topTracks.filter((t) => t.popularity >= 70).length,
-                              topTracks.filter((t) => t.popularity >= 40 && t.popularity < 70).length,
-                              topTracks.filter((t) => t.popularity < 40).length,
-                            ],
-                            backgroundColor: ["#1DB954", "#f1c40f", "#e74c3c"],
-                          },
-                        ],
-                      }}
-                    />
-                  </div>
-                </Card>
-              </Col>
+    {/* Ligne 2 : Heures d'écoute + Écoutes 7j */}
+    <Row>
+      <Col md={6}>
+        <Card className="p-4 mb-4" style={glassCardStyle}>
+          <h4 className="fw-bold text-success mb-3">⏰ Heures d'écoute</h4>
+          <Line
+            data={{
+              labels: Array.from({ length: 24 }, (_, i) => `${i}h`),
+              datasets: [
+                {
+                  label: "Titres joués",
+                  data: hourData.map((h) => h.count),
+                  fill: true,
+                  borderColor: "#1DB954",
+                  backgroundColor: "rgba(29,185,84,0.2)",
+                },
+              ],
+            }}
+          />
+        </Card>
+      </Col>
 
-              <Col md={6}>
-                <Card className="p-4 mb-4" style={glassCardStyle}>
-                  <h4 className="fw-bold text-success mb-3">📅 Écoutes par jour (7 derniers jours)</h4>
-                  <Line
-                    data={{
-                      labels: Array.from({ length: 7 }, (_, i) => {
-                        const d = new Date();
-                        d.setDate(d.getDate() - (6 - i));
-                        return d.toLocaleDateString("fr-FR", { weekday: "short" });
-                      }),
-                      datasets: [
-                        {
-                          label: "Titres joués",
-                          data: Array.from({ length: 7 }, (_, i) => {
-                            const d = new Date();
-                            d.setDate(d.getDate() - (6 - i));
-                            const dayKey = d.toISOString().split("T")[0];
-                            return recentPlays.filter(
-                              (p) => new Date(p.played_at).toISOString().split("T")[0] === dayKey
-                            ).length;
-                          }),
-                          fill: true,
-                          borderColor: "#1DB954",
-                          backgroundColor: "rgba(29,185,84,0.2)",
-                        },
-                      ],
-                    }}
-                  />
-                </Card>
-              </Col>
-            </Row>
+      <Col md={6}>
+        <Card className="p-4 mb-4" style={glassCardStyle}>
+          <h4 className="fw-bold text-success mb-3">📅 Écoutes par jour (7 derniers jours)</h4>
+          <Line
+            data={{
+              labels: dailyLabels,
+              datasets: [
+                {
+                  label: "Titres joués",
+                  data: dailyValues,
+                  fill: true,
+                  borderColor: "#1DB954",
+                  backgroundColor: "rgba(29,185,84,0.2)",
+                },
+              ],
+            }}
+            options={{
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { color: "#f0f0f0" },
+                  grid: { color: "#333" },
+                },
+                x: {
+                  ticks: { color: "#f0f0f0" },
+                  grid: { color: "#333" },
+                },
+              },
+              plugins: { legend: { labels: { color: "#f0f0f0" } } },
+            }}
+          />
+        </Card>
+      </Col>
+    </Row>
 
-            <Row>
-              <Col md={6}>
-                <Card className="p-4 mb-4" style={glassCardStyle}>
-                  <h4 className="fw-bold text-success mb-3">⏱️ Durée moyenne des titres</h4>
-                  <div style={{ maxWidth: "500px", margin: "0 auto" }}>
-                    <Bar
-                      data={{
-                        labels: ["Top Tracks", "Écoutes Récentes"],
-                        datasets: [
-                          {
-                            label: "Durée moyenne (minutes)",
-                            data: [
-                              topTracks.length > 0
-                                ? topTracks.reduce((a, b) => a + (b as any).duration_ms, 0) / topTracks.length / 60000
-                                : 0,
-                              recentPlays.length > 0
-                                ? recentPlays.reduce((a, b) => a + b.track.duration_ms, 0) / recentPlays.length / 60000
-                                : 0,
-                            ],
-                            backgroundColor: ["#1DB954", "#3498db"],
-                          },
-                        ],
-                      }}
-                      options={{
-                        scales: {
-                          y: {
-                            beginAtZero: true,
-                            ticks: { color: "#f0f0f0" },
-                          },
-                          x: {
-                            ticks: { color: "#f0f0f0" },
-                          },
-                        },
-                        plugins: {
-                          legend: { labels: { color: "#f0f0f0" } },
-                        },
-                      }}
-                    />
-                  </div>
-                </Card>
-              </Col>
-{monthlyStats.length > 0 && (
-  <Card className="p-4 mb-4" style={glassCardStyle}>
-    <h4 className="fw-bold text-success mb-3">📆 Écoutes mensuelles</h4>
-    <Bar
-      data={{
-        labels: monthlyStats.map((s) => s.label),
-        datasets: [
-          {
-            label: "Nombre d'écoutes",
-            data: monthlyStats.map((s) => s.value),
-            backgroundColor: "#1DB954",
-          },
-        ],
-      }}
-    />
-  </Card>
-)}
-              <Col md={6}>
-                <Card className="p-4 mb-4" style={glassCardStyle}>
-                  <h4 className="fw-bold text-success mb-3">🏅 Mes Badges</h4>
-                  <Row>
-                    {ALL_BADGES.map((badge) => {
-                      const unlocked = badges.includes(badge.label);
-                      return (
-                        <Col key={badge.key} xs={6} md={4} className="mb-3 text-center">
-                          <motion.div
-                            whileHover={{ scale: 1.1 }}
-                            className="p-3 rounded"
-                            style={{
-                              cursor: "pointer",
-                              border: unlocked ? "2px solid #1DB954" : "2px solid #333",
-                              background: unlocked ? "rgba(29,185,84,0.2)" : "rgba(255,255,255,0.05)",
-                              color: unlocked ? "#fff" : "#555",
-                              boxShadow: unlocked ? "0px 0px 20px rgba(29,185,84,0.8)" : "none",
-                              transition: "all 0.3s ease-in-out",
-                            }}
-                            onClick={() => alert(`${badge.label} : ${badge.description}`)}
-                          >
-                            <div style={{ fontSize: "2rem" }}>{badge.icon}</div>
-                            <p className="fw-bold mt-2">{badge.label}</p>
-                          </motion.div>
-                        </Col>
-                      );
-                    })}
-                  </Row>
-                </Card>
-              </Col>
-            </Row>
+    {/* Ligne 3 : Durées + Mensuelles */}
+    <Row>
+      <Col md={6}>
+        <Card className="p-4 mb-4" style={glassCardStyle}>
+          <h4 className="fw-bold text-success mb-3">⏱️ Distribution des durées récentes</h4>
+          <Bar
+            data={{
+              labels: ["0–2 min", "2–4 min", "4–6 min", "+6 min"],
+              datasets: [
+                {
+                  label: "Nombre de titres",
+                  data: [
+                    durationBuckets["0–2 min"],
+                    durationBuckets["2–4 min"],
+                    durationBuckets["4–6 min"],
+                    durationBuckets["+6 min"],
+                  ],
+                  backgroundColor: ["#1DB954", "#3498db", "#f1c40f", "#e74c3c"],
+                },
+              ],
+            }}
+            options={{
+              scales: {
+                y: { beginAtZero: true, ticks: { color: "#f0f0f0" }, grid: { color: "#333" } },
+                x: { ticks: { color: "#f0f0f0" }, grid: { color: "#333" } },
+              },
+              plugins: { legend: { labels: { color: "#f0f0f0" } } },
+            }}
+          />
+        </Card>
+      </Col>
 
-            {/* Comparaisons */}
-            <Row>
-              <Col md={6}>
-                <Card className="p-4 mb-4" style={glassCardStyle}>
-                  <h4 className="fw-bold text-success mb-3">👥 Popularité moyenne (comparaison)</h4>
-                  <Bar data={popularityData} />
-                </Card>
-              </Col>
-              <Col md={6}>
-                <Card className="p-4 mb-4" style={glassCardStyle}>
-                  <h4 className="fw-bold text-success mb-3">🎼 Genres par utilisateur (stacked)</h4>
-                  <Bar
-                    data={stackedGenreData}
-                    options={{ responsive: true, plugins: { legend: { position: "top" as const } }, scales: { x: { stacked: true }, y: { stacked: true } } }}
-                  />
-                </Card>
-              </Col>
-            </Row>
-
-            {/* Devices */}
-            <Row>
-              <Col md={6}>
-                <Card className="p-4 mb-4" style={glassCardStyle}>
-                  <h4 className="fw-bold text-success mb-3">🖥️ Appareils utilisés</h4>
-                  <div style={{ maxWidth: "360px", margin: "0 auto" }}>
-                    <Pie data={deviceData} />
-                  </div>
-                </Card>
-              </Col>
-              <Col md={6}>
-                <Card className="p-4 mb-4" style={glassCardStyle}>
-                  <h4 className="fw-bold text-success mb-3">🧭 Radar (exemple visuel)</h4>
-                  <Radar
-                    data={{
-                      labels: ["Découverte", "Énergie", "Dansabilité", "Acoustique", "Instrumental", "Live"],
-                      datasets: [
-                        {
-                          label: "Moi",
-                          data: [65, 59, 90, 81, 56, 55],
-                          backgroundColor: "rgba(29,185,84,0.2)",
-                          borderColor: "#1DB954",
-                        },
-                        {
-                          label: "Moyenne",
-                          data: [28, 48, 40, 19, 96, 27],
-                          backgroundColor: "rgba(52,152,219,0.2)",
-                          borderColor: "#3498db",
-                        },
-                      ],
-                    }}
-                    options={{
-                      scales: { r: { angleLines: { color: "#555" }, grid: { color: "#333" }, pointLabels: { color: "#ddd" } } },
-                      plugins: { legend: { labels: { color: "#f0f0f0" } } },
-                    }}
-                  />
-                </Card>
-              </Col>
-            </Row>
-          </>
+      <Col md={6}>
+        {monthlyStats.length > 0 && (
+          <Card className="p-4 mb-4" style={glassCardStyle}>
+            <h4 className="fw-bold text-success mb-3">📆 Écoutes mensuelles</h4>
+            <Bar
+              data={{
+                labels: monthlyStats.map((s) => s.label),
+                datasets: [
+                  {
+                    label: "Nombre d'écoutes",
+                    data: monthlyStats.map((s) => s.value),
+                    backgroundColor: "#1DB954",
+                  },
+                ],
+              }}
+            />
+          </Card>
         )}
+      </Col>
+    </Row>
+
+    {/* Ligne 4 : Badges + Comparaisons */}
+  {/* Ligne 4 : Badges + Appareils */}
+<Row>
+  <Col md={6}>
+    <Card className="p-4 mb-4" style={glassCardStyle}>
+      <h4 className="fw-bold text-success mb-3">🏅 Mes Badges</h4>
+      <Row>
+        {ALL_BADGES.map((badge) => {
+          const unlocked = badges.includes(badge.label);
+          return (
+            <Col key={badge.key} xs={6} md={4} className="mb-3 text-center">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                className="p-3 rounded"
+                style={{
+                  cursor: "pointer",
+                  border: unlocked ? "2px solid #1DB954" : "2px solid #333",
+                  background: unlocked ? "rgba(29,185,84,0.2)" : "rgba(255,255,255,0.05)",
+                  color: unlocked ? "#fff" : "#555",
+                  boxShadow: unlocked ? "0px 0px 20px rgba(29,185,84,0.8)" : "none",
+                  transition: "all 0.3s ease-in-out",
+                }}
+                onClick={() => alert(`${badge.label} : ${badge.description}`)}
+              >
+                <div style={{ fontSize: "2rem" }}>{badge.icon}</div>
+                <p className="fw-bold mt-2">{badge.label}</p>
+              </motion.div>
+            </Col>
+          );
+        })}
+      </Row>
+    </Card>
+  </Col>
+
+  <Col md={6}>
+    <Card className="p-4 mb-4" style={glassCardStyle}>
+      <h4 className="fw-bold text-success mb-3">📱 Appareils utilisés</h4>
+      <Pie
+        data={deviceData}
+        options={{
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const label = context.label || "";
+                  const value = context.raw as number;
+                  return `${label}: ${value} titres`;
+                },
+              },
+            },
+            legend: {
+              labels: { color: "#f0f0f0", font: { size: 14, weight: "bold" } },
+            },
+          },
+        }}
+      />
+    </Card>
+  </Col>
+</Row>
+
+{/* Ligne 5 : Genres + Popularité moyenne */}
+<Row>
+  <Col md={6}>
+    <Card className="p-4 mb-4" style={glassCardStyle}>
+      <h4 className="fw-bold text-success mb-3">🎼 Genres par utilisateur (stacked)</h4>
+      <Bar
+        data={stackedGenreData}
+        options={{
+          responsive: true,
+          plugins: { legend: { position: "top" as const } },
+          scales: { x: { stacked: true }, y: { stacked: true } },
+        }}
+      />
+    </Card>
+  </Col>
+
+  <Col md={6}>
+    <Card className="p-4 mb-4" style={glassCardStyle}>
+      <h4 className="fw-bold text-success mb-3">👥 Popularité moyenne (comparaison)</h4>
+      <Bar data={popularityData} />
+    </Card>
+  </Col>
+</Row>
+
+  </>
+)}
+
+
       </Container>
     </div>
   );

@@ -33,7 +33,7 @@ app.use('/auth', authController);
 app.use('/spotify', spotifyController);
 app.use('/admin', adminController);
 
-// ✅ Middleware global d’erreurs (4 arguments obligatoires)
+// ✅ Middleware global d’erreurs
 app.use(async (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   try {
     const repo = AppDataSource.getRepository(ErrorLog);
@@ -55,6 +55,8 @@ const port: number = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 AppDataSource.initialize()
   .then(async () => {
+    console.log("✅ Connexion DB réussie");
+
     await seedDatabase();
 
     const userRepo = AppDataSource.getRepository(User);
@@ -67,8 +69,10 @@ AppDataSource.initialize()
       console.log('🎵 Token Spotify rafraîchi au démarrage');
     }
 
+    // Première synchro directe
     await syncSpotifyHistory();
 
+    // On lance le serveur
     app.listen(port, () => {
       console.log(`✅ Server started at http://localhost:${port}`);
       console.log('🎵 SPOTIFY_REDIRECT_URI:', process.env.SPOTIFY_REDIRECT_URI);
@@ -86,8 +90,8 @@ AppDataSource.initialize()
       await syncSpotifyHistory();
     });
   })
-  .catch(() => {
-    // ❌ On ne log plus les erreurs SQL
+  .catch((err) => {
+    console.error("❌ Erreur d'initialisation du serveur :", err);
   });
 
 export default app;

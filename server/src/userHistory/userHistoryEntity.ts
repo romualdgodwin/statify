@@ -13,22 +13,31 @@ export class UserHistory {
   @PrimaryGeneratedColumn()
   id!: number
 
-  @Column({ nullable: true })
-  trackId!: string // ✅ Spotify track ID (utile si tu veux relier aux APIs plus tard)
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  trackId!: string | null  // ✅ Spotify track ID
 
-  @Column()
+  @Column({ type: 'varchar' })
   trackName!: string
 
-  @Column()
+  @Column({ type: 'varchar' })
   artistName!: string
 
+  @Column({ type: 'int', nullable: true })
+  durationMs!: number | null  // durée en ms
+
+  @Column({ type: 'varchar', nullable: true })
+  deviceType!: string | null  // type d’appareil
+
+  @Column({ type: 'varchar', nullable: true })
+  deviceName!: string | null  // nom de l’appareil
+
   @Column({ type: 'timestamptz', nullable: true })
-  playedAt!: Date
+  playedAt!: Date | null
 
   @ManyToOne(() => User, (user) => user.histories, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'user_id' }) // ✅ colonne FK explicite
+  @JoinColumn({ name: 'user_id' })
   user!: User
 
   @CreateDateColumn()

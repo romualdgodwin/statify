@@ -12,12 +12,9 @@ import { User } from '../user/userEntity'
 import jwt from 'jsonwebtoken'
 import { getValidAccessToken } from '../../utils/spotifyTokenManager'
 import { UserHistory } from '../../userHistory/userHistoryEntity'
-import {
-  AuthRequest,
-  requireAuth,
-  requireSpotifyUser,
-} from '../auth/authMiddleware'
+import {AuthRequest,requireAuth,requireSpotifyUser} from '../auth/authMiddleware'
 import { generateBadges } from '../../services/badgeService'
+import { getDailyStats } from "../../services/statsService";
 
 const spotifyController = Router()
 const userRepository = AppDataSource.getRepository(User)
@@ -421,136 +418,98 @@ spotifyController.get(
   }) as RequestHandler
 )
 
-// ======================================================
-// 🔹 Monthly stats
-// ======================================================
 spotifyController.get(
   '/monthly-stats',
   requireAuth,
   requireSpotifyUser,
-  (async (
-    req: AuthRequest,
-    res: Response
-  ): Promise<void> => {
+  (async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const userId = req.user?.id
-      const user = await userRepository.findOneBy({
-        id: userId,
-      })
-      if (!user) {
-        res
-          .status(404)
-          .json({ error: 'Utilisateur introuvable' })
+      if (!userId) {
+        res.status(401).json({ error: 'Utilisateur non authentifié' })
         return
       }
 
-      const token = await getValidAccessToken(user)
-      const response = await axios.get(
-        'https://api.spotify.com/v1/me/player/recently-played?limit=50',
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
+      // On récupère tout l’historique en DB
+      const history = await userHistoryRepository.find({
+        where: { user: { id: userId } },
+        order: { playedAt: 'DESC' },
+      })
 
-      const items = response.data.items
       const monthlyCount: Record<string, number> = {}
 
-      items.forEach((play: any) => {
-        const d = new Date(play.played_at)
-        const key = `${d.getFullYear()}-${String(
-          d.getMonth() + 1
-        ).padStart(2, '0')}`
+      history.forEach((play) => {
+        if (!play.playedAt) return // ✅ on ignore si null
+        const d = new Date(play.playedAt)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
         monthlyCount[key] = (monthlyCount[key] || 0) + 1
       })
 
       const now = new Date()
-      const lastThree = Array.from({ length: 3 }).map(
-        (_, i) => {
-          const d = new Date(
-            now.getFullYear(),
-            now.getMonth() - (2 - i),
-            1
-          )
-          const key = `${d.getFullYear()}-${String(
-            d.getMonth() + 1
-          ).padStart(2, '0')}`
-          const label = d.toLocaleString('fr-FR', {
-            month: 'short',
-            year: 'numeric',
-          })
-          return { label, value: monthlyCount[key] || 0 }
-        }
-      )
+      const lastThree = Array.from({ length: 3 }).map((_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (2 - i), 1)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        const label = d.toLocaleString('fr-FR', { month: 'short', year: 'numeric' })
+        return { label, value: monthlyCount[key] || 0 }
+      })
 
       res.json(lastThree)
-      return
-    } catch {
-      res
-        .status(500)
-        .json({
-          error: 'Erreur récupération stats mensuelles',
-        })
-      return
+    } catch (error) {
+      console.error('❌ Erreur monthly-stats (DB):', error)
+      res.status(500).json({ error: 'Erreur récupération stats mensuelles' })
     }
   }) as RequestHandler
 )
+
+
 // ======================================================
-// 🔹 Recently played (sauvegarde UserHistory)
+// 🔹 Recently played (format identique à Spotify API)
 // ======================================================
 spotifyController.get(
   '/recently-played',
   requireAuth,
   requireSpotifyUser,
-  (async (
-    req: AuthRequest,
-    res: Response
-  ): Promise<void> => {
+  (async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        res
-          .status(401)
-          .json({ error: 'Utilisateur non authentifié' })
+        res.status(401).json({ error: 'Utilisateur non authentifié' })
         return
       }
 
-      const user = await userRepository.findOneBy({
-        id: userId,
+      const limit = Number(req.query.limit) || 50
+
+      const history = await userHistoryRepository.find({
+        where: { user: { id: userId } },
+        order: { playedAt: 'DESC' },
+        take: limit,
       })
-      if (!user) {
-        res
-          .status(404)
-          .json({ error: 'Utilisateur introuvable' })
-        return
-      }
 
-      const token = await getValidAccessToken(user)
-      const response = await axios.get(
-        'https://api.spotify.com/v1/me/player/recently-played?limit=20',
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      const items = history.map((h) => ({
+  played_at: h.playedAt,
+  track: {
+    id: h.trackId,
+    name: h.trackName,
+    artists: [{ name: h.artistName }],
+    duration_ms: h.durationMs, // ✅ Ajout durée
+  },
+  device: {
+    type: h.deviceType || "Inconnu", // ✅ Ajout type d’appareil
+    name: h.deviceName || null,      // ✅ Ajout nom appareil
+  },
+}))
 
-      for (const play of response.data.items) {
-        await userHistoryRepository.save({
-          user: { id: userId },
-          trackName: play.track.name,
-          artistName: play.track.artists
-            .map((a: any) => a.name)
-            .join(', '),
-          playedAt: new Date(play.played_at),
-        })
-      }
-
-      res.json(response.data)
+      res.json({ items })
       return
-    } catch {
-      res
-        .status(500)
-        .json({ error: 'Erreur titres récemment joués' })
+    } catch (error) {
+      console.error('❌ Erreur recently-played (DB):', error)
+      res.status(500).json({ error: 'Erreur titres récemment joués' })
       return
     }
   }) as RequestHandler
 )
+
+
 
 // ======================================================
 // 🔹 Compare entre 3 utilisateurs
@@ -586,6 +545,64 @@ spotifyController.get(
 )
 
 // ======================================================
+// 🔹 Devices (appareils actifs Spotify)
+// ======================================================
+spotifyController.get(
+  "/devices",
+  requireAuth,
+  requireSpotifyUser,
+  (async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: "Utilisateur non authentifié" });
+        return;
+      }
+
+      const user = await userRepository.findOneBy({ id: userId });
+      if (!user) {
+        res.status(404).json({ error: "Utilisateur introuvable" });
+        return;
+      }
+
+      const token = await getValidAccessToken(user);
+      const response = await axios.get("https://api.spotify.com/v1/me/player/devices", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      res.json(response.data.devices || []);
+      return;
+    } catch (error: any) {
+      console.error("❌ Erreur /spotify/devices:", error.response?.data || error.message);
+      res.status(500).json({ error: "Impossible de récupérer les appareils Spotify" });
+      return;
+    }
+  }) as RequestHandler
+);
+
+//DAILY-STATS
+spotifyController.get(
+  "/daily-stats",
+  requireAuth,
+  requireSpotifyUser,
+  (async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: "Utilisateur non authentifié" });
+        return;
+      }
+
+      const stats = await getDailyStats(userId, 7);
+      res.json(stats); // { labels: [...], values: [...] }
+    } catch (err) {
+      console.error("❌ Erreur daily-stats :", err);
+      res.status(500).json({ error: "Erreur récupération daily stats" });
+    }
+  }) as RequestHandler
+);
+
+// ======================================================
 // 🔹 Badges utilisateur
 // ======================================================
 spotifyController.get(
@@ -614,6 +631,8 @@ spotifyController.get(
     }
   }) as RequestHandler
 )
+
+
 
 // ======================================================
 // 🔹 Rafraîchir un access_token avec refresh_token

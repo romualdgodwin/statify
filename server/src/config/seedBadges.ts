@@ -1,7 +1,8 @@
+//seedBadges.ts
 import 'reflect-metadata'
-import { AppDataSource } from './dataSource'
-import { User } from './modules/user/userEntity'
-import { UserHistory } from './userHistory/userHistoryEntity'
+import { AppDataSource } from '../dataSource'
+import { User } from '../modules/user/userEntity'
+import { UserHistory } from '../userHistory/userHistoryEntity'
 
 async function seedBadges() {
   await AppDataSource.initialize()
