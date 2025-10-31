@@ -4,130 +4,163 @@ import {
   Request,
   Response,
   RequestHandler,
-} from 'express'
-import { AppDataSource } from '../../dataSource'
-import { User } from './userEntity'
-import { UserHistory } from '../../userHistory/userHistoryEntity'
+} from "express";
+import { AppDataSource } from "../../dataSource";
+import { User } from "./userEntity";
+import { UserHistory } from "../../userHistory/userHistoryEntity";
 import {
   requireAuth,
   requireAdmin,
-} from '../auth/authMiddleware'
-import bcrypt from 'bcryptjs'
-import axios from 'axios'
+} from "../auth/authMiddleware";
+import bcrypt from "bcryptjs";
+import axios from "axios";
+import { Badge } from "../badge/badgeEntity"; // ✅ entité Badge
+import { generateBadges } from "../../services/badgeService"; // ✅ service badges
 
-const userRouter = Router()
-const userRepository = AppDataSource.getRepository(User)
-const historyRepository = AppDataSource.getRepository(UserHistory)
+const userRouter = Router();
+const userRepository = AppDataSource.getRepository(User);
+const historyRepository = AppDataSource.getRepository(UserHistory);
 
 // ======================================================
 // 🔹 Helper pour récupérer le token
 // ======================================================
 function getSpotifyToken(req: Request): string | null {
-  const token = req.headers.authorization?.split(' ')[1]
-  return token || null
+  const token = req.headers.authorization?.split(" ")[1];
+  return token || null;
 }
 
 // ======================================================
 // 🔹 Route publique simple
 // ======================================================
 userRouter.get(
-  '/public',
+  "/public",
   ((_req: Request, res: Response): void => {
-    res.json({ message: 'Cette route est publique 🚀' })
-  }) as RequestHandler,
-)
+    res.json({ message: "Cette route est publique 🚀" });
+  }) as RequestHandler
+);
 
 // ======================================================
 // 🔹 Liste publique des utilisateurs
 // ======================================================
 userRouter.get(
-  '/',
+  "/",
   (async (_req: Request, res: Response): Promise<void> => {
     try {
       const users = await userRepository.find({
-        select: ['id', 'email', 'role', 'createdAt', 'updatedAt'],
-      })
-      res.json(users)
-      return
+        select: ["id", "email", "role", "createdAt", "updatedAt"],
+      });
+      res.json(users);
+      return;
     } catch (error) {
-      console.error('❌ Erreur user/:', error)
-      res.status(500).json({ error: 'Erreur serveur' })
-      return
+      console.error("❌ Erreur user/:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+      return;
     }
-  }) as RequestHandler,
-)
+  }) as RequestHandler
+);
 
 // ======================================================
 // 🔹 Profil de l’utilisateur connecté
 // ======================================================
 userRouter.get(
-  '/me',
+  "/me",
   requireAuth,
   (async (req: any, res: Response): Promise<void> => {
     try {
-      const userId = req.user?.id
+      const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({ error: 'Utilisateur non authentifié' })
-        return
+        res.status(401).json({ error: "Utilisateur non authentifié" });
+        return;
       }
 
       const user = await userRepository.findOne({
         where: { id: userId },
-        select: ['id', 'email', 'role', 'createdAt', 'updatedAt'],
-      })
+        select: ["id", "email", "role", "createdAt", "updatedAt"],
+      });
 
       if (!user) {
-        res.status(404).json({ error: 'Utilisateur non trouvé' })
-        return
+        res.status(404).json({ error: "Utilisateur non trouvé" });
+        return;
       }
 
-      res.json(user)
-      return
+      res.json(user);
+      return;
     } catch (error) {
-      console.error('❌ Erreur user/me:', error)
-      res.status(500).json({ error: 'Erreur serveur' })
-      return
+      console.error("❌ Erreur user/me:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+      return;
     }
-  }) as RequestHandler,
-)
+  }) as RequestHandler
+);
+
+// ======================================================
+// 🔹 Badges de l’utilisateur connecté
+// ======================================================
+userRouter.get(
+  "/me/badges",
+  requireAuth,
+  (async (req: any, res: Response): Promise<void> => {
+    try {
+      const userId = req.user.id;
+
+      // ⚡ Récupérer tous les badges créés (par admin ou système)
+      const badgeRepo = AppDataSource.getRepository(Badge);
+      const allBadges = await badgeRepo.find();
+
+      // ⚡ Récupérer ceux que l’utilisateur a réellement débloqués
+      const unlockedLabels = await generateBadges(userId); // ex: ["Fan de Rock", "100 écoutes"]
+
+      // On combine tout
+      const badges = allBadges.map((badge) => ({
+        ...badge,
+        unlocked: unlockedLabels.includes(badge.label),
+      }));
+
+      res.json(badges);
+    } catch (error) {
+      console.error("❌ Erreur user/me/badges:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  }) as RequestHandler
+);
 
 // ======================================================
 // 🔹 Historique utilisateur
 // ======================================================
 userRouter.get(
-  '/:id/history',
+  "/:id/history",
   requireAuth,
   (async (req: any, res: Response): Promise<void> => {
     try {
-      const id = Number(req.params.id)
+      const id = Number(req.params.id);
       const history = await historyRepository.find({
         where: { user: { id } },
-        order: { playedAt: 'DESC' },
-      })
-      res.json({ success: true, data: history })
-      return
+        order: { playedAt: "DESC" },
+      });
+      res.json({ success: true, data: history });
+      return;
     } catch (error) {
-      console.error('❌ Erreur get history:', error)
-      res.status(500).json({ success: false, message: 'Erreur serveur' })
-      return
+      console.error("❌ Erreur get history:", error);
+      res.status(500).json({ success: false, message: "Erreur serveur" });
+      return;
     }
-  }) as RequestHandler,
-)
+  }) as RequestHandler
+);
 
 userRouter.post(
-  '/:id/history',
+  "/:id/history",
   requireAuth,
   (async (req: any, res: Response): Promise<void> => {
     try {
-      const id = Number(req.params.id)
-      const { trackName, artistName, playedAt } = req.body
+      const id = Number(req.params.id);
+      const { trackName, artistName, playedAt } = req.body;
 
       if (!trackName || !artistName || !playedAt) {
         res.status(400).json({
           success: false,
-          message: 'Champs manquants',
-        })
-        return
+          message: "Champs manquants",
+        });
+        return;
       }
 
       const newHistory = historyRepository.create({
@@ -135,48 +168,48 @@ userRouter.post(
         artistName,
         playedAt: new Date(playedAt),
         user: { id } as any,
-      })
+      });
 
-      await historyRepository.save(newHistory)
-      res.status(201).json({ success: true, data: newHistory })
-      return
+      await historyRepository.save(newHistory);
+      res.status(201).json({ success: true, data: newHistory });
+      return;
     } catch (error) {
-      console.error('❌ Erreur add history:', error)
-      res.status(500).json({ success: false, message: 'Erreur serveur' })
-      return
+      console.error("❌ Erreur add history:", error);
+      res.status(500).json({ success: false, message: "Erreur serveur" });
+      return;
     }
-  }) as RequestHandler,
-)
+  }) as RequestHandler
+);
 
 userRouter.post(
-  '/:id/sync-history',
+  "/:id/sync-history",
   requireAuth,
   (async (req: any, res: Response): Promise<void> => {
     try {
-      const id = Number(req.params.id)
-      const token = getSpotifyToken(req)
+      const id = Number(req.params.id);
+      const token = getSpotifyToken(req);
 
       if (!token) {
-        res.status(401).json({ error: 'Token Spotify manquant' })
-        return
+        res.status(401).json({ error: "Token Spotify manquant" });
+        return;
       }
 
       const response = await axios.get(
-        'https://api.spotify.com/v1/me/player/recently-played?limit=50',
-        { headers: { Authorization: `Bearer ${token}` } },
-      )
+        "https://api.spotify.com/v1/me/player/recently-played?limit=50",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      const plays = response.data.items
-      let inserted = 0
+      const plays = response.data.items;
+      let inserted = 0;
 
       for (const play of plays) {
-        const trackName = play.track.name
-        const artistName = play.track.artists.map((a: any) => a.name).join(', ')
-        const playedAt = new Date(play.played_at)
+        const trackName = play.track.name;
+        const artistName = play.track.artists.map((a: any) => a.name).join(", ");
+        const playedAt = new Date(play.played_at);
 
         const exists = await historyRepository.findOne({
           where: { user: { id }, trackName, artistName, playedAt },
-        })
+        });
 
         if (!exists) {
           const newHistory = historyRepository.create({
@@ -184,148 +217,207 @@ userRouter.post(
             artistName,
             playedAt,
             user: { id } as any,
-          })
-          await historyRepository.save(newHistory)
-          inserted++
+          });
+          await historyRepository.save(newHistory);
+          inserted++;
         }
       }
 
       res.json({
         success: true,
         message: `✅ ${inserted} nouvelles écoutes ajoutées`,
-      })
-      return
+      });
+      return;
     } catch (error: any) {
-      console.error('❌ Erreur sync history:', error.response?.data || error.message)
-      res.status(500).json({ success: false, message: 'Erreur lors de la synchro Spotify' })
-      return
+      console.error(
+        "❌ Erreur sync history:",
+        error.response?.data || error.message
+      );
+      res
+        .status(500)
+        .json({ success: false, message: "Erreur lors de la synchro Spotify" });
+      return;
     }
-  }) as RequestHandler,
-)
+  }) as RequestHandler
+);
 
 // ======================================================
 // 🔹 CRUD réservé aux admins
 // ======================================================
 userRouter.get(
-  '/all',
+  "/all",
   requireAuth,
   requireAdmin,
   (async (_req: Request, res: Response): Promise<void> => {
     try {
       const users = await userRepository.find({
-        select: ['id', 'email', 'role', 'createdAt', 'updatedAt'],
-      })
-      res.json(users)
-      return
+        select: ["id", "email", "role", "createdAt", "updatedAt"],
+      });
+      res.json(users);
+      return;
     } catch (error) {
-      console.error('❌ Erreur user/all:', error)
-      res.status(500).json({ error: 'Erreur serveur' })
-      return
+      console.error("❌ Erreur user/all:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+      return;
     }
-  }) as RequestHandler,
-)
+  }) as RequestHandler
+);
 
 userRouter.post(
-  '/',
+  "/",
   requireAuth,
   requireAdmin,
   (async (req: Request, res: Response): Promise<void> => {
     try {
-      const { email, password, role } = req.body
+      const { email, password, role } = req.body;
 
       if (!email || !password) {
-        res.status(400).json({ error: 'Email et mot de passe requis' })
-        return
+        res.status(400).json({ error: "Email et mot de passe requis" });
+        return;
       }
 
-      const existing = await userRepository.findOne({ where: { email } })
+      const existing = await userRepository.findOne({ where: { email } });
       if (existing) {
-        res.status(400).json({ error: 'Cet email est déjà utilisé' })
-        return
+        res.status(400).json({ error: "Cet email est déjà utilisé" });
+        return;
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10)
+      const hashedPassword = await bcrypt.hash(password, 10);
       const newUser = userRepository.create({
         email,
         password: hashedPassword,
-        role: role || 'user',
-      })
+        role: role || "user",
+      });
 
-      await userRepository.save(newUser)
+      await userRepository.save(newUser);
 
       res.status(201).json({
         id: newUser.id,
         email: newUser.email,
         role: newUser.role,
         createdAt: newUser.createdAt,
-      })
-      return
+      });
+      return;
     } catch (error) {
-      console.error('❌ Erreur create user:', error)
-      res.status(500).json({ error: 'Erreur serveur' })
-      return
+      console.error("❌ Erreur create user:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+      return;
     }
-  }) as RequestHandler,
-)
+  }) as RequestHandler
+);
 
 userRouter.put(
-  '/:id',
+  "/:id",
   requireAuth,
   requireAdmin,
   (async (req: Request, res: Response): Promise<void> => {
     try {
-      const id = Number(req.params.id)
-      const { email, password, role } = req.body
+      const id = Number(req.params.id);
+      const { email, password, role } = req.body;
 
-      const user = await userRepository.findOne({ where: { id } })
+      const user = await userRepository.findOne({ where: { id } });
       if (!user) {
-        res.status(404).json({ error: 'Utilisateur non trouvé' })
-        return
+        res.status(404).json({ error: "Utilisateur non trouvé" });
+        return;
       }
 
-      if (email) user.email = email
-      if (role) user.role = role
-      if (password) user.password = await bcrypt.hash(password, 10)
+      if (email) user.email = email;
+      if (role) user.role = role;
+      if (password) user.password = await bcrypt.hash(password, 10);
 
-      await userRepository.save(user)
+      await userRepository.save(user);
 
       res.json({
         id: user.id,
         email: user.email,
         role: user.role,
         updatedAt: user.updatedAt,
-      })
-      return
+      });
+      return;
     } catch (error) {
-      console.error('❌ Erreur update user:', error)
-      res.status(500).json({ error: 'Erreur serveur' })
-      return
+      console.error("❌ Erreur update user:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+      return;
     }
-  }) as RequestHandler,
-)
+  }) as RequestHandler
+);
 
 userRouter.delete(
-  '/:id',
+  "/:id",
   requireAuth,
   requireAdmin,
   (async (req: Request, res: Response): Promise<void> => {
     try {
-      const id = Number(req.params.id)
-      const result = await userRepository.delete(id)
+      const id = Number(req.params.id);
+      const result = await userRepository.delete(id);
 
       if (result.affected === 0) {
-        res.status(404).json({ error: 'Utilisateur non trouvé' })
-        return
+        res.status(404).json({ error: "Utilisateur non trouvé" });
+        return;
       }
 
-      res.json({ message: 'Utilisateur supprimé avec succès' })
-      return
+      res.json({ message: "Utilisateur supprimé avec succès" });
+      return;
     } catch (error) {
-      console.error('❌ Erreur delete user:', error)
-      res.status(500).json({ error: 'Erreur serveur' })
-      return
+      console.error("❌ Erreur delete user:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+      return;
     }
-  }) as RequestHandler,
-)
+  }) as RequestHandler
+);
 
-export default userRouter
+// ======================================================
+// 🔹 Leaderboard des utilisateurs (admin)
+// ======================================================
+userRouter.get(
+  "/leaderboard",
+  requireAuth,
+  requireAdmin,
+  (async (_req: Request, res: Response): Promise<void> => {
+    try {
+      const users = await userRepository.find();
+
+      const leaderboard: {
+        id: number;
+        email: string;
+        totalPlays: number;
+        uniqueArtists: number;
+      }[] = [];
+
+      for (const u of users) {
+        // total d’écoutes
+        const totalPlays = await historyRepository.count({
+          where: { user: { id: u.id } },
+        });
+
+        // nombre d’artistes uniques
+        const result = await historyRepository
+          .createQueryBuilder("h")
+          .select("COUNT(DISTINCT h.artistName)", "count")
+          .where("h.user_id = :id", { id: u.id })
+          .getRawOne();
+
+        const uniqueArtists = parseInt(result.count, 10) || 0;
+
+        leaderboard.push({
+          id: u.id,
+          email: u.email,
+          totalPlays,
+          uniqueArtists,
+        });
+      }
+
+      // Tri décroissant par nombre d’écoutes
+      leaderboard.sort((a, b) => b.totalPlays - a.totalPlays);
+
+      res.json({ success: true, leaderboard });
+    } catch (error) {
+      console.error("❌ Erreur leaderboard:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Erreur serveur" });
+    }
+  }) as RequestHandler
+);
+
+export default userRouter;

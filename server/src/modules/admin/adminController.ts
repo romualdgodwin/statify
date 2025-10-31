@@ -114,6 +114,98 @@ adminController.post(
     }
   }) as RequestHandler,
 )
+// ======================================================
+// 6. CRUD Badges (admin only)
+// ======================================================
+import { Badge } from '../badge/badgeEntity' // ⚠️ Assure-toi d'avoir créé l'entité Badge
+
+// 📌 Récupérer tous les badges
+adminController.get(
+  '/badges',
+  (async (_req: Request, res: Response) => {
+    try {
+      const badgeRepo = AppDataSource.getRepository(Badge)
+      const badges = await badgeRepo.find()
+      res.json({ badges })
+    } catch (err) {
+      console.error('❌ Erreur /admin/badges GET:', err)
+      res.status(500).json({ error: 'Erreur serveur' })
+    }
+  }) as RequestHandler,
+)
+
+// 📌 Créer un badge
+adminController.post(
+  '/badges',
+  (async (req: Request, res: Response) => {
+    try {
+      const { label, description, icon } = req.body
+      if (!label || !description) {
+        res.status(400).json({ error: 'Label et description requis' })
+        return
+      }
+
+      const badgeRepo = AppDataSource.getRepository(Badge)
+      const newBadge = badgeRepo.create({
+        label,
+        description,
+        icon: icon || '🏅',
+        isCustom: true,
+      })
+      await badgeRepo.save(newBadge)
+
+      res.status(201).json(newBadge)
+    } catch (err) {
+      console.error('❌ Erreur /admin/badges POST:', err)
+      res.status(500).json({ error: 'Erreur serveur' })
+    }
+  }) as RequestHandler,
+)
+
+// 📌 Modifier un badge
+adminController.put(
+  '/badges/:id',
+  (async (req: Request, res: Response) => {
+    try {
+      const badgeRepo = AppDataSource.getRepository(Badge)
+      const badge = await badgeRepo.findOneBy({ id: parseInt(req.params.id) })
+
+      if (!badge) {
+        res.status(404).json({ error: 'Badge introuvable' })
+        return
+      }
+
+      Object.assign(badge, req.body)
+      await badgeRepo.save(badge)
+      res.json(badge)
+    } catch (err) {
+      console.error('❌ Erreur /admin/badges PUT:', err)
+      res.status(500).json({ error: 'Erreur serveur' })
+    }
+  }) as RequestHandler,
+)
+
+// 📌 Supprimer un badge
+adminController.delete(
+  '/badges/:id',
+  (async (req: Request, res: Response) => {
+    try {
+      const badgeRepo = AppDataSource.getRepository(Badge)
+      const result = await badgeRepo.delete(parseInt(req.params.id))
+
+      if (result.affected === 0) {
+        res.status(404).json({ error: 'Badge introuvable' })
+        return
+      }
+
+      res.json({ success: true, message: 'Badge supprimé' })
+    } catch (err) {
+      console.error('❌ Erreur /admin/badges DELETE:', err)
+      res.status(500).json({ error: 'Erreur serveur' })
+    }
+  }) as RequestHandler,
+)
+
 
 // ======================================================
 // 5. Voir tokens expirés
@@ -133,5 +225,21 @@ adminController.get(
     }
   }) as RequestHandler,
 )
+
+// 📌 Récupérer tous les badges
+adminController.get(
+  '/badges',
+  (async (_req: Request, res: Response) => {
+    try {
+      const badgeRepo = AppDataSource.getRepository(Badge)
+      const badges = await badgeRepo.find()
+      res.json(badges) // ✅ On renvoie directement le tableau
+    } catch (err) {
+      console.error('❌ Erreur /admin/badges GET:', err)
+      res.status(500).json({ error: 'Erreur serveur' })
+    }
+  }) as RequestHandler,
+)
+
 
 export default adminController

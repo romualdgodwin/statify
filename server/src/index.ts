@@ -16,6 +16,9 @@ import { syncSpotifyHistory } from './services/spotifySyncService';
 import { getValidAccessToken } from './utils/spotifyTokenManager';
 import { seedDatabase } from './config/seed';
 import { ErrorLog } from './modules/logs/errorLogEntity';
+import badgeRouter from './modules/badge/badgeRoutes'
+
+
 
 const app = express();
 
@@ -32,6 +35,7 @@ app.use('/users', userRouter);
 app.use('/auth', authController);
 app.use('/spotify', spotifyController);
 app.use('/admin', adminController);
+app.use('/api', badgeRouter)
 
 // ✅ Middleware global d’erreurs
 app.use(async (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

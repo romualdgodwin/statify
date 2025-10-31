@@ -71,19 +71,6 @@ type Badge = {
   icon: string;
 };
 
-const ALL_BADGES: Badge[] = [
-  { key: "first", label: "🎵 Premier pas", description: "Ton premier morceau écouté ! Bienvenue 🎉", icon: "🎵" },
-  { key: "100plays", label: "💯 100 écoutes", description: "Tu as franchi la barre mythique des 100 écoutes.", icon: "💯" },
-  { key: "nightowl", label: "🌙 Noctambule", description: "Écoutes après minuit... t’es un vrai hibou 🦉", icon: "🌙" },
-  { key: "fan", label: "⭐ Fan d’un artiste", description: "Tu as écouté ton artiste préféré au moins 50 fois !", icon: "⭐" },
-  { key: "marathon", label: "🔥 Marathon 7 jours", description: "Écoutes chaque jour pendant une semaine complète 🔥", icon: "🔥" },
-  { key: "ironman", label: "🤖 Iron Man", description: "300 écoutes, ton armure musicale est forgée.", icon: "🤖" },
-  { key: "hulk", label: "💪 Hulk", description: "Fan de Metal ? Tu déchaînes ta rage !", icon: "💪" },
-  { key: "thor", label: "🔨 Thor", description: "Vendredi soir électrique, digne d’Asgard ⚡", icon: "⚡" },
-  { key: "spiderman", label: "🕷️ Spiderman", description: "Tu explores +50 artistes différents 🕸️", icon: "🕷️" },
-  { key: "cap", label: "🛡️ Captain America", description: "Tu te lèves tôt pour écouter ta musique 🇺🇸", icon: "🛡️" },
-];
-
 type SpotifyPlaylist = { id: string; name: string; images?: { url: string }[] };
 
 type SpotifyProfile = {
@@ -142,7 +129,9 @@ export const SpotifyDashboard = () => {
   const [activeTab, setActiveTab] = useState<"dashboard" | "stats">("dashboard");
 
   const [monthlyStats, setMonthlyStats] = useState<{ label: string; value: number }[]>([]);
-  const [badges, setBadges] = useState<string[]>([]);
+  const [allBadges, setAllBadges] = useState<Badge[]>([]);
+  const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
+
   
   // ✅ Nouveau : daily stats
   const [dailyLabels, setDailyLabels] = useState<string[]>([]);
@@ -220,10 +209,13 @@ const deviceTypeMap: Record<string, string> = {
 
 
         if (badgesResOrNull) {
-          setBadges(badgesResOrNull.data.badges || []);
-        } else {
-          setBadges([]);
-        }
+  setAllBadges(badgesResOrNull.data.allBadges || []);
+  setUnlockedBadges(badgesResOrNull.data.unlocked || []);
+} else {
+  setAllBadges([]);
+  setUnlockedBadges([]);
+}
+
 
         setCompareUsers(compareRes.data.users || []);
         setComparePopularity(compareRes.data.avgPopularity || []);
@@ -894,33 +886,34 @@ const deviceData = {
 <Row>
   <Col md={6}>
     <Card className="p-4 mb-4" style={glassCardStyle}>
-      <h4 className="fw-bold text-success mb-3">🏅 Mes Badges</h4>
-      <Row>
-        {ALL_BADGES.map((badge) => {
-          const unlocked = badges.includes(badge.label);
-          return (
-            <Col key={badge.key} xs={6} md={4} className="mb-3 text-center">
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                className="p-3 rounded"
-                style={{
-                  cursor: "pointer",
-                  border: unlocked ? "2px solid #1DB954" : "2px solid #333",
-                  background: unlocked ? "rgba(29,185,84,0.2)" : "rgba(255,255,255,0.05)",
-                  color: unlocked ? "#fff" : "#555",
-                  boxShadow: unlocked ? "0px 0px 20px rgba(29,185,84,0.8)" : "none",
-                  transition: "all 0.3s ease-in-out",
-                }}
-                onClick={() => alert(`${badge.label} : ${badge.description}`)}
-              >
-                <div style={{ fontSize: "2rem" }}>{badge.icon}</div>
-                <p className="fw-bold mt-2">{badge.label}</p>
-              </motion.div>
-            </Col>
-          );
-        })}
-      </Row>
-    </Card>
+  <h4 className="fw-bold text-success mb-3">🏅 Mes Badges</h4>
+  <Row>
+    {allBadges.map((badge) => {
+      const unlocked = unlockedBadges.includes(badge.label);
+      return (
+        <Col key={badge.label} xs={6} md={4} className="mb-3 text-center">
+          <motion.div
+            whileHover={{ scale: 1.1 }}
+            className="p-3 rounded"
+            style={{
+              cursor: "pointer",
+              border: unlocked ? "2px solid #1DB954" : "2px solid #333",
+              background: unlocked ? "rgba(29,185,84,0.2)" : "rgba(255,255,255,0.05)",
+              color: unlocked ? "#fff" : "#555",
+              boxShadow: unlocked ? "0px 0px 20px rgba(29,185,84,0.8)" : "none",
+              transition: "all 0.3s ease-in-out",
+            }}
+            onClick={() => alert(`${badge.label} : ${badge.description}`)}
+          >
+            <div style={{ fontSize: "2rem" }}>{badge.icon}</div>
+            <p className="fw-bold mt-2">{badge.label}</p>
+          </motion.div>
+        </Col>
+      );
+    })}
+  </Row>
+</Card>
+
   </Col>
 
   <Col md={6}>

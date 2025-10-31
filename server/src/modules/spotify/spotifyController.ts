@@ -15,6 +15,8 @@ import { UserHistory } from '../../userHistory/userHistoryEntity'
 import {AuthRequest,requireAuth,requireSpotifyUser} from '../auth/authMiddleware'
 import { generateBadges } from '../../services/badgeService'
 import { getDailyStats } from "../../services/statsService";
+import { getAllBadgeDefinitions } from '../../services/badgeService'
+
 
 const spotifyController = Router()
 const userRepository = AppDataSource.getRepository(User)
@@ -603,34 +605,38 @@ spotifyController.get(
 );
 
 // ======================================================
-// 🔹 Badges utilisateur
+// 🔹 Badges utilisateur (dynamiques + admin + système)
 // ======================================================
 spotifyController.get(
   '/badges',
   requireAuth,
   requireSpotifyUser,
-  (async (
-    req: AuthRequest,
-    res: Response
-  ): Promise<void> => {
+  (async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const userId = req.user?.id
       if (!userId) {
-        res
-          .status(401)
-          .json({ error: 'Utilisateur non authentifié' })
+        res.status(401).json({ error: 'Utilisateur non authentifié' })
         return
       }
 
-      const badges = await generateBadges(userId)
-      res.json({ badges })
-      return
-    } catch {
-      res.status(500).json({ error: 'Erreur badges' })
-      return
+      // 🎯 1. Générer les badges débloqués par cet utilisateur
+      const unlocked = await generateBadges(userId)
+
+      // 🎯 2. Charger tous les badges existants (admin + système)
+      const allBadges = await getAllBadgeDefinitions()
+
+      // 🎯 3. Réponse complète
+      res.json({
+        unlocked,      // Liste des labels débloqués
+        allBadges,     // Liste complète des badges possibles
+      })
+    } catch (error) {
+      console.error('❌ Erreur /spotify/badges:', error)
+      res.status(500).json({ error: 'Erreur lors du chargement des badges' })
     }
-  }) as RequestHandler
+  }) as RequestHandler,
 )
+
 
 
 

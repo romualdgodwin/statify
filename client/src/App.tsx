@@ -1,23 +1,29 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Users } from "./pages/Users";
-import { CreateUser } from "./pages/CreateUser";
-import { Login } from "./pages/Login";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
+
+// 🧩 Pages Utilisateurs
+import { Login } from "./pages/Login";
+import { MonCompte } from "./pages/MonCompte";
+import { SpotifyDashboard } from "./pages/SpotifyDashboard";
 import SpotifyCallback from "./pages/SpotifyCallback";
-import { MonCompte } from "./pages/MonCompte"; 
-import { SpotifyDashboard } from "./pages/SpotifyDashboard"; 
+
+// 🛠️ Pages Admin
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminBadges from "./pages/AdminBadges";
+import { Users } from "./pages/Users";
+import { CreateUser } from "./pages/CreateUser";
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Layout global : header + footer */}
           <Route element={<Layout />}>
             
-            {/* ✅ Dashboard utilisateur */}
+            {/* 🎵 Utilisateur : Espace Spotify */}
             <Route
               path="/spotify-dashboard"
               element={
@@ -27,7 +33,7 @@ function App() {
               }
             />
 
-            {/* ✅ Mon Compte */}
+            {/* 👤 Espace personnel */}
             <Route
               path="/mon-compte"
               element={
@@ -37,7 +43,23 @@ function App() {
               }
             />
 
-            {/* ✅ Admin */}
+            {/* 🧑‍💼 Espace administrateur */}
+            <Route
+              path="/admin-dashboard"
+              element={
+                <ProtectedRoute role="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin-badges"
+              element={
+                <ProtectedRoute role="admin">
+                  <AdminBadges />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/users"
               element={
@@ -54,20 +76,12 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/admin-dashboard"
-              element={
-                <ProtectedRoute role="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
 
-            {/* ✅ Auth */}
+            {/* 🔐 Authentification */}
             <Route path="/login" element={<Login />} />
             <Route path="/spotify-callback" element={<SpotifyCallback />} />
 
-            {/* ✅ Catch-all */}
+            {/* 🚧 Fallback : redirige vers login */}
             <Route path="*" element={<Login />} />
           </Route>
         </Routes>
