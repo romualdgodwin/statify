@@ -2,13 +2,7 @@ import { PropsWithChildren } from "react";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 
-/**
- * 📄 Composant Page
- * Sert de conteneur standard pour une page complète :
- * - Affiche un Header avec un titre
- * - Le contenu principal (children)
- * - Et le Footer global
- */
+
 export type PageProps = {
   /** Titre de la page affiché dans le header */
   title: string;
@@ -21,7 +15,7 @@ export const Page = ({ title, children }: PropsWithChildren<PageProps>) => {
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
-        backgroundColor: "#121212", // fond cohérent avec ton thème
+        backgroundColor: "#121212", 
         color: "#f0f0f0",
       }}
     >

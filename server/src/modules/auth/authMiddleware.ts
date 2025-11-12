@@ -1,4 +1,3 @@
-// server/src/modules/auth/authMiddleware.ts
 import { Request, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 
@@ -19,16 +18,15 @@ export interface AuthRequest extends Request {
   user?: AuthUser;
 }
 
-// ======================================================
-// ✅ Helper : récupérer l'utilisateur depuis req
-// ======================================================
+//  Helper : récupérer l'utilisateur depuis req
+
 export function getUserFromRequest(req: Request): AuthUser | undefined {
   return (req as AuthRequest).user;
 }
 
-// ======================================================
-// ✅ Vérifie qu’un utilisateur est connecté (JWT interne)
-// ======================================================
+
+// Vérifie qu’un utilisateur est connecté (JWT interne)
+
 export const requireAuth: RequestHandler = (req, res, next): void => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -59,9 +57,9 @@ export const requireAuth: RequestHandler = (req, res, next): void => {
   }
 };
 
-// ======================================================
-// ✅ Vérifie que l’utilisateur est admin
-// ======================================================
+
+// Vérifie que l’utilisateur est admin
+
 export const requireAdmin: RequestHandler = (req, res, next): void => {
   const user = getUserFromRequest(req);
   if (!user) {
@@ -75,9 +73,9 @@ export const requireAdmin: RequestHandler = (req, res, next): void => {
   next();
 };
 
-// ======================================================
-// ✅ Vérifie que l’utilisateur est un "Spotify user" ou local
-// ======================================================
+
+//  Vérifie que l’utilisateur est un "Spotify user" ou local
+
 export const requireSpotifyUser: RequestHandler = (req, res, next): void => {
   const user = getUserFromRequest(req);
   if (!user) {

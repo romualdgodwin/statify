@@ -30,9 +30,9 @@ if (!process.env.JWT_SECRET) {
 }
 const JWT_SECRET = process.env.JWT_SECRET
 
-// ======================================================
-// 🔹 Login Spotify
-// ======================================================
+
+//  Login Spotify
+
 spotifyController.get('/login', ((_req, res): void => {
   const scope = [
     'user-read-private',
@@ -57,9 +57,9 @@ spotifyController.get('/login', ((_req, res): void => {
   )
 }) as RequestHandler)
 
-// ======================================================
-// 🔹 Callback Spotify
-// ======================================================
+
+//  Callback Spotify
+
 spotifyController.get('/callback', (async (
   req: Request,
   res: Response
@@ -154,9 +154,9 @@ spotifyController.get('/callback', (async (
   }
 }) as RequestHandler)
 
-// ======================================================
-// 🔹 Profil Spotify direct (utilise accessToken passé par le client)
-// ======================================================
+
+//  Profil Spotify direct (utilise accessToken passé par le client)
+
 spotifyController.get(
   "/me",
   requireAuth,
@@ -175,7 +175,7 @@ spotifyController.get(
         return;
       }
 
-      // ✅ récupère automatiquement un token valide (refresh si besoin)
+      //  récupère automatiquement un token valide (refresh si besoin)
       const token = await getValidAccessToken(user);
 
       const response = await axios.get("https://api.spotify.com/v1/me", {
@@ -190,9 +190,9 @@ spotifyController.get(
   }) as RequestHandler
 );
 
-// ======================================================
-// 🔹 Profil via DB auto-refresh
-// ======================================================
+
+//  Profil via DB auto-refresh
+
 spotifyController.get(
   '/me-auto',
   requireAuth,
@@ -241,9 +241,9 @@ spotifyController.get(
     }
   }) as RequestHandler
 )
-// ======================================================
-// 🔹 Top artistes
-// ======================================================
+
+//  Top artistes
+
 spotifyController.get(
   '/top-artists',
   requireAuth,
@@ -283,9 +283,9 @@ spotifyController.get(
   }) as RequestHandler
 )
 
-// ======================================================
-// 🔹 Top musiques
-// ======================================================
+
+//  Top musiques
+
 spotifyController.get(
   '/top-tracks',
   requireAuth,
@@ -325,9 +325,9 @@ spotifyController.get(
   }) as RequestHandler
 )
 
-// ======================================================
-// 🔹 Playlists
-// ======================================================
+
+//  Playlists
+
 spotifyController.get(
   '/playlists',
   requireAuth,
@@ -367,9 +367,9 @@ spotifyController.get(
   }) as RequestHandler
 )
 
-// ======================================================
-// 🔹 Recherche
-// ======================================================
+
+//  Recherche
+
 spotifyController.get(
   '/search',
   requireAuth,
@@ -441,7 +441,7 @@ spotifyController.get(
       const monthlyCount: Record<string, number> = {}
 
       history.forEach((play) => {
-        if (!play.playedAt) return // ✅ on ignore si null
+        if (!play.playedAt) return // 
         const d = new Date(play.playedAt)
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
         monthlyCount[key] = (monthlyCount[key] || 0) + 1
@@ -464,9 +464,9 @@ spotifyController.get(
 )
 
 
-// ======================================================
-// 🔹 Recently played (format identique à Spotify API)
-// ======================================================
+
+//  Recently played (format identique à Spotify API)
+
 spotifyController.get(
   '/recently-played',
   requireAuth,
@@ -493,11 +493,11 @@ spotifyController.get(
     id: h.trackId,
     name: h.trackName,
     artists: [{ name: h.artistName }],
-    duration_ms: h.durationMs, // ✅ Ajout durée
+    duration_ms: h.durationMs, 
   },
   device: {
-    type: h.deviceType || "Inconnu", // ✅ Ajout type d’appareil
-    name: h.deviceName || null,      // ✅ Ajout nom appareil
+    type: h.deviceType || "Inconnu", 
+    name: h.deviceName || null,     
   },
 }))
 
@@ -513,9 +513,9 @@ spotifyController.get(
 
 
 
-// ======================================================
-// 🔹 Compare entre 3 utilisateurs
-// ======================================================
+
+//  Compare entre 3 utilisateurs
+
 spotifyController.get(
   '/compare',
   requireAuth,
@@ -546,9 +546,9 @@ spotifyController.get(
   }) as RequestHandler
 )
 
-// ======================================================
-// 🔹 Devices (appareils actifs Spotify)
-// ======================================================
+
+//  Devices (appareils actifs Spotify)
+
 spotifyController.get(
   "/devices",
   requireAuth,
@@ -596,7 +596,7 @@ spotifyController.get(
       }
 
       const stats = await getDailyStats(userId, 7);
-      res.json(stats); // { labels: [...], values: [...] }
+      res.json(stats); 
     } catch (err) {
       console.error("❌ Erreur daily-stats :", err);
       res.status(500).json({ error: "Erreur récupération daily stats" });
@@ -604,9 +604,9 @@ spotifyController.get(
   }) as RequestHandler
 );
 
-// ======================================================
-// 🔹 Badges utilisateur (dynamiques + admin + système)
-// ======================================================
+
+//  Badges utilisateur (dynamiques + admin + système)
+
 spotifyController.get(
   '/badges',
   requireAuth,
@@ -619,16 +619,15 @@ spotifyController.get(
         return
       }
 
-      // 🎯 1. Générer les badges débloqués par cet utilisateur
       const unlocked = await generateBadges(userId)
 
-      // 🎯 2. Charger tous les badges existants (admin + système)
+
       const allBadges = await getAllBadgeDefinitions()
 
-      // 🎯 3. Réponse complète
+
       res.json({
-        unlocked,      // Liste des labels débloqués
-        allBadges,     // Liste complète des badges possibles
+        unlocked,      
+        allBadges,     
       })
     } catch (error) {
       console.error('❌ Erreur /spotify/badges:', error)
@@ -640,9 +639,9 @@ spotifyController.get(
 
 
 
-// ======================================================
-// 🔹 Rafraîchir un access_token avec refresh_token
-// ======================================================
+
+// Rafraîchir un access_token avec refresh_token
+
 spotifyController.post('/refresh', (async (
   req: Request,
   res: Response

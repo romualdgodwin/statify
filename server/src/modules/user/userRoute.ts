@@ -1,4 +1,3 @@
-// server/src/modules/user/userRoutes.ts
 import {
   Router,
   Request,
@@ -14,24 +13,24 @@ import {
 } from "../auth/authMiddleware";
 import bcrypt from "bcryptjs";
 import axios from "axios";
-import { Badge } from "../badge/badgeEntity"; // ✅ entité Badge
-import { generateBadges } from "../../services/badgeService"; // ✅ service badges
+import { Badge } from "../badge/badgeEntity"; 
+import { generateBadges } from "../../services/badgeService"; 
 
 const userRouter = Router();
 const userRepository = AppDataSource.getRepository(User);
 const historyRepository = AppDataSource.getRepository(UserHistory);
 
-// ======================================================
-// 🔹 Helper pour récupérer le token
-// ======================================================
+
+//  Helper pour récupérer le token
+
 function getSpotifyToken(req: Request): string | null {
   const token = req.headers.authorization?.split(" ")[1];
   return token || null;
 }
 
-// ======================================================
-// 🔹 Route publique simple
-// ======================================================
+
+// Route publique simple
+
 userRouter.get(
   "/public",
   ((_req: Request, res: Response): void => {
@@ -39,9 +38,9 @@ userRouter.get(
   }) as RequestHandler
 );
 
-// ======================================================
-// 🔹 Liste publique des utilisateurs
-// ======================================================
+
+// Liste publique des utilisateurs
+
 userRouter.get(
   "/",
   (async (_req: Request, res: Response): Promise<void> => {
@@ -59,9 +58,9 @@ userRouter.get(
   }) as RequestHandler
 );
 
-// ======================================================
-// 🔹 Profil de l’utilisateur connecté
-// ======================================================
+
+// Profil de l’utilisateur connecté
+
 userRouter.get(
   "/me",
   requireAuth,
@@ -93,9 +92,9 @@ userRouter.get(
   }) as RequestHandler
 );
 
-// ======================================================
-// 🔹 Badges de l’utilisateur connecté
-// ======================================================
+
+// Badges de l’utilisateur connecté
+
 userRouter.get(
   "/me/badges",
   requireAuth,
@@ -103,12 +102,12 @@ userRouter.get(
     try {
       const userId = req.user.id;
 
-      // ⚡ Récupérer tous les badges créés (par admin ou système)
+      // Récupérer tous les badges créés (par admin ou système)
       const badgeRepo = AppDataSource.getRepository(Badge);
       const allBadges = await badgeRepo.find();
 
-      // ⚡ Récupérer ceux que l’utilisateur a réellement débloqués
-      const unlockedLabels = await generateBadges(userId); // ex: ["Fan de Rock", "100 écoutes"]
+      // Récupérer ceux que l’utilisateur a réellement débloqués
+      const unlockedLabels = await generateBadges(userId); 
 
       // On combine tout
       const badges = allBadges.map((badge) => ({
@@ -124,9 +123,9 @@ userRouter.get(
   }) as RequestHandler
 );
 
-// ======================================================
-// 🔹 Historique utilisateur
-// ======================================================
+
+// Historique utilisateur
+
 userRouter.get(
   "/:id/history",
   requireAuth,
@@ -241,9 +240,9 @@ userRouter.post(
   }) as RequestHandler
 );
 
-// ======================================================
-// 🔹 CRUD réservé aux admins
-// ======================================================
+
+// CRUD réservé aux admins
+
 userRouter.get(
   "/all",
   requireAuth,
@@ -366,9 +365,9 @@ userRouter.delete(
   }) as RequestHandler
 );
 
-// ======================================================
-// 🔹 Leaderboard des utilisateurs (admin)
-// ======================================================
+
+// Leaderboard des utilisateurs (admin)
+
 userRouter.get(
   "/leaderboard",
   requireAuth,

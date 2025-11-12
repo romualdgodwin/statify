@@ -1,4 +1,3 @@
-// server/src/modules/user/userController.ts
 import { Request, Response, RequestHandler } from 'express'
 import { UserService } from './userService'
 import { AppDataSource } from '../../dataSource'
@@ -10,9 +9,9 @@ const historyRepository =
   AppDataSource.getRepository(UserHistory)
 
 export class UserController {
-  // ======================================================
-  // 📌 Récupérer tous les utilisateurs (admin)
-  // ======================================================
+
+  //  Récupérer tous les utilisateurs (admin)
+
   static getUsers: RequestHandler = async (
     _req: Request,
     res: Response,
@@ -28,9 +27,9 @@ export class UserController {
     }
   }
 
-  // ======================================================
-  // 📌 Récupérer un utilisateur par ID
-  // ======================================================
+
+  //  Récupérer un utilisateur par ID
+
   static getUserById: RequestHandler = async (
     req: Request,
     res: Response,
@@ -64,9 +63,8 @@ export class UserController {
     }
   }
 
-  // ======================================================
-  // 📌 Créer un utilisateur (admin)
-  // ======================================================
+  //  Créer un utilisateur (admin)
+
   static createUser: RequestHandler = async (
     req: Request,
     res: Response,
@@ -101,9 +99,9 @@ export class UserController {
     }
   }
 
-  // ======================================================
-  // 📌 Mettre à jour un utilisateur (admin)
-  // ======================================================
+
+  //  Mettre à jour un utilisateur (admin)
+
   static updateUser: RequestHandler = async (
     req: Request,
     res: Response,
@@ -153,9 +151,8 @@ export class UserController {
     }
   }
 
-  // ======================================================
-  // 📌 Supprimer un utilisateur (admin)
-  // ======================================================
+  // Supprimer un utilisateur (admin)
+
   static deleteUser: RequestHandler = async (
     req: Request,
     res: Response,
@@ -181,7 +178,7 @@ export class UserController {
         return
       }
 
-      res.status(204).send() // Pas besoin de body pour un delete réussi
+      res.status(204).send() 
     } catch (error) {
       console.error('❌ Error deleteUser:', error)
       res
@@ -190,9 +187,9 @@ export class UserController {
     }
   }
 
-  // ======================================================
-  // 📌 Récupérer l’historique d’un utilisateur
-  // ======================================================
+
+  //  Récupérer l’historique d’un utilisateur
+
   static getUserHistory: RequestHandler = async (
     req: Request,
     res: Response,
@@ -220,9 +217,9 @@ export class UserController {
     }
   }
 
-  // ======================================================
-  // 📌 Ajouter une écoute manuellement (utile pour tests)
-  // ======================================================
+
+  // Ajouter une écoute manuellement (utile pour tests)
+
   static addUserHistory: RequestHandler = async (
     req: Request,
     res: Response,

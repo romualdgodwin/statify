@@ -1,4 +1,3 @@
-// server/src/modules/admin/adminController.ts
 import {
   Router,
   Request,
@@ -15,13 +14,11 @@ import { requireAuth, requireAdmin } from '../auth/authMiddleware'
 
 const adminController = Router()
 
-// ✅ On applique d'abord requireAuth puis requireAdmin
 adminController.use(requireAuth as RequestHandler)
 adminController.use(requireAdmin as RequestHandler)
 
-// ======================================================
+
 // 1. Stats utilisateurs
-// ======================================================
 adminController.get(
   '/stats/users',
   (async (_req: Request, res: Response) => {
@@ -44,9 +41,8 @@ adminController.get(
   }) as RequestHandler,
 )
 
-// ======================================================
+
 // 2. Nombre total de morceaux
-// ======================================================
 adminController.get(
   '/stats/plays',
   (async (_req: Request, res: Response) => {
@@ -61,9 +57,8 @@ adminController.get(
   }) as RequestHandler,
 )
 
-// ======================================================
+
 // 3. Stats sur les badges
-// ======================================================
 adminController.get(
   '/stats/badges',
   (async (_req: Request, res: Response) => {
@@ -86,9 +81,8 @@ adminController.get(
   }) as RequestHandler,
 )
 
-// ======================================================
+
 // 4. Forcer la synchro Spotify d’un utilisateur
-// ======================================================
 adminController.post(
   '/refresh/:id',
   (async (req: Request, res: Response) => {
@@ -114,12 +108,11 @@ adminController.post(
     }
   }) as RequestHandler,
 )
-// ======================================================
-// 6. CRUD Badges (admin only)
-// ======================================================
-import { Badge } from '../badge/badgeEntity' // ⚠️ Assure-toi d'avoir créé l'entité Badge
 
-// 📌 Récupérer tous les badges
+// 6. CRUD Badges (admin only)
+import { Badge } from '../badge/badgeEntity' 
+
+//  Récupérer tous les badges
 adminController.get(
   '/badges',
   (async (_req: Request, res: Response) => {
@@ -134,7 +127,7 @@ adminController.get(
   }) as RequestHandler,
 )
 
-// 📌 Créer un badge
+//  Créer un badge
 adminController.post(
   '/badges',
   (async (req: Request, res: Response) => {
@@ -162,7 +155,7 @@ adminController.post(
   }) as RequestHandler,
 )
 
-// 📌 Modifier un badge
+//  Modifier un badge
 adminController.put(
   '/badges/:id',
   (async (req: Request, res: Response) => {
@@ -185,7 +178,7 @@ adminController.put(
   }) as RequestHandler,
 )
 
-// 📌 Supprimer un badge
+//  Supprimer un badge
 adminController.delete(
   '/badges/:id',
   (async (req: Request, res: Response) => {
@@ -207,9 +200,9 @@ adminController.delete(
 )
 
 
-// ======================================================
+
 // 5. Voir tokens expirés
-// ======================================================
+
 adminController.get(
   '/tokens/expired',
   (async (_req: Request, res: Response) => {
@@ -226,14 +219,14 @@ adminController.get(
   }) as RequestHandler,
 )
 
-// 📌 Récupérer tous les badges
+//  Récupérer tous les badges
 adminController.get(
   '/badges',
   (async (_req: Request, res: Response) => {
     try {
       const badgeRepo = AppDataSource.getRepository(Badge)
       const badges = await badgeRepo.find()
-      res.json(badges) // ✅ On renvoie directement le tableau
+      res.json(badges) 
     } catch (err) {
       console.error('❌ Erreur /admin/badges GET:', err)
       res.status(500).json({ error: 'Erreur serveur' })

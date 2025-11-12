@@ -16,14 +16,11 @@ console.log(
   CLIENT_SECRET?.slice(0, 5) + '...',
 )
 
-/**
- * Retourne un access_token valide pour un utilisateur.
- * Rafraîchit le token si nécessaire et sauvegarde en DB.
- */
+
 export async function getValidAccessToken(
   user: User,
 ): Promise<string> {
-  // ✅ Vérifie si le token est encore valide
+  // Vérifie si le token est encore valide
   if (
     user.spotifyAccessToken &&
     user.tokenExpiresAt &&
@@ -63,7 +60,7 @@ export async function getValidAccessToken(
       Date.now() + expiresIn * 1000,
     )
 
-    // ✅ sauvegarde en base dans la table users
+    //  sauvegarde en base dans la table users
     await AppDataSource.getRepository(User).save(user)
 
     console.log('✅ Nouveau Spotify access_token obtenu !')

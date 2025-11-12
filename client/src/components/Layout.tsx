@@ -2,11 +2,7 @@ import { Outlet } from "react-router-dom";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 
-/**
- * 📦 Layout global de l’application
- * Contient le header, le contenu principal (Outlet) et le footer.
- * Structure commune à toutes les pages.
- */
+
 export const Layout = () => {
   return (
     <div
@@ -14,8 +10,8 @@ export const Layout = () => {
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
-        backgroundColor: "#121212", // ✅ fond global
-        color: "#f0f0f0", // ✅ couleur de texte standard
+        backgroundColor: "#121212", 
+        color: "#f0f0f0", 
       }}
     >
       {/* 🧭 En-tête fixe */}
@@ -27,7 +23,7 @@ export const Layout = () => {
         role="main"
         style={{
           flex: 1,
-          paddingTop: "80px", // compense le header sticky
+          paddingTop: "80px", 
           display: "flex",
           justifyContent: "center",
           alignItems: "flex-start",

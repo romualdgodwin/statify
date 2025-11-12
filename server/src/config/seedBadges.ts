@@ -1,4 +1,3 @@
-//seedBadges.ts
 import 'reflect-metadata'
 import { AppDataSource } from '../dataSource'
 import { User } from '../modules/user/userEntity'
@@ -22,11 +21,10 @@ async function seedBadges() {
 
   const now = new Date()
 
-  // =============================
-  // 🎵 Premier pas → déjà validé
-  // =============================
+  //  Premier pas → déjà validé
 
-  // 💯 + ⭐ Fan d’un artiste (Booba 120 écoutes)
+
+  // Fan d’un artiste (Booba 120 écoutes)
   for (let i = 0; i < 120; i++) {
     const playedAt = new Date(now.getTime() - i * 60000) // chaque minute
     const history = historyRepo.create({
@@ -38,7 +36,7 @@ async function seedBadges() {
     await historyRepo.save(history)
   }
 
-  // 💪 Hulk (60 écoutes de Metallica)
+  //  Hulk (60 écoutes de Metallica)
   for (let i = 0; i < 60; i++) {
     const playedAt = new Date(now.getTime() - i * 3600000) // chaque heure
     const history = historyRepo.create({
@@ -50,7 +48,7 @@ async function seedBadges() {
     await historyRepo.save(history)
   }
 
-  // ⚡ Thor (25 écoutes vendredi soir après 18h)
+  //  Thor (25 écoutes vendredi soir après 18h)
   const friday = new Date()
   friday.setDate(friday.getDate() - friday.getDay() + 5) // dernier vendredi
   friday.setHours(19, 0, 0, 0)
@@ -66,7 +64,7 @@ async function seedBadges() {
     await historyRepo.save(history)
   }
 
-  // 🛡️ Captain America (35 écoutes entre 5h et 9h)
+  // Captain America (35 écoutes entre 5h et 9h)
   const morning = new Date()
   morning.setHours(6, 0, 0, 0)
   for (let i = 0; i < 35; i++) {
@@ -82,7 +80,7 @@ async function seedBadges() {
     await historyRepo.save(history)
   }
 
-  // 🔥 Marathon 7 jours → 1 écoute par jour sur 7 jours consécutifs
+  // Marathon 7 jours → 1 écoute par jour sur 7 jours consécutifs
   for (let d = 0; d < 7; d++) {
     const day = new Date()
     day.setDate(now.getDate() - d)

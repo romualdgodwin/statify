@@ -24,7 +24,7 @@ export default function AdminBadges() {
     const fetchBadges = async () => {
       try {
         const res = await api.get("/admin/badges");
-        // ✅ ton adminController renvoie { badges }
+        // adminController renvoie { badges }
         setBadges(res.data.badges || []);
       } catch (err) {
         console.error("❌ Erreur chargement badges:", err);
@@ -44,7 +44,6 @@ export default function AdminBadges() {
     }
     try {
       const res = await api.post("/admin/badges", { ...newBadge, isCustom: true });
-      // ✅ ici ton controller renvoie directement le badge créé
       setBadges([...badges, res.data]);
       setNewBadge({ label: "", description: "", icon: "" });
     } catch (err) {
@@ -84,7 +83,7 @@ export default function AdminBadges() {
 
   return (
     <div className="container mx-auto px-4 py-6 text-white">
-      <h2 className="text-2xl font-bold mb-4 text-black">🏅 Gestion des badges</h2>
+      <h2 className="text-2xl font-bold mb-4 text-white">🏅 Gestion des badges</h2>
 
 
       {/* Formulaire ajout */}

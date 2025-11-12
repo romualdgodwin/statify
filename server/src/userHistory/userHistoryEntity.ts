@@ -14,8 +14,7 @@ export class UserHistory {
   id!: number
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  trackId!: string | null  // ✅ Spotify track ID
-
+  trackId!: string | null  
   @Column({ type: 'varchar' })
   trackName!: string
 
@@ -23,13 +22,12 @@ export class UserHistory {
   artistName!: string
 
   @Column({ type: 'int', nullable: true })
-  durationMs!: number | null  // durée en ms
+  durationMs!: number | null  
+  @Column({ type: 'varchar', nullable: true })
+  deviceType!: string | null 
 
   @Column({ type: 'varchar', nullable: true })
-  deviceType!: string | null  // type d’appareil
-
-  @Column({ type: 'varchar', nullable: true })
-  deviceName!: string | null  // nom de l’appareil
+  deviceName!: string | null  
 
   @Column({ type: 'timestamptz', nullable: true })
   playedAt!: Date | null

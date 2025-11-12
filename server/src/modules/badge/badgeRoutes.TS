@@ -7,9 +7,9 @@ import { getAllBadgeDefinitions } from '../../services/badgeService'
 const badgeRouter = Router()
 const badgeRepo = AppDataSource.getRepository(Badge)
 
-// ======================================================
-// 🔹 Route publique : liste complète (système + admin)
-// ======================================================
+
+//  Route publique : liste complète (système + admin)
+
 badgeRouter.get('/', async (_req: Request, res: Response) => {
   try {
     const allBadges = await getAllBadgeDefinitions()
@@ -20,11 +20,9 @@ badgeRouter.get('/', async (_req: Request, res: Response) => {
   }
 })
 
-// ======================================================
-// 🔹 Routes Admin uniquement
-// ======================================================
 
-// 📌 Récupérer tous les badges de la BDD
+//  Routes Admin uniquement
+//  Récupérer tous les badges de la BDD
 badgeRouter.get('/admin/badges', requireAuth, requireAdmin, async (_req: Request, res: Response) => {
   try {
     const badges = await badgeRepo.find()
@@ -35,7 +33,7 @@ badgeRouter.get('/admin/badges', requireAuth, requireAdmin, async (_req: Request
   }
 })
 
-// 📌 Ajouter un badge personnalisé
+//  Ajouter un badge personnalisé
 badgeRouter.post('/admin/badges', requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { label, description, icon } = req.body
@@ -59,7 +57,7 @@ badgeRouter.post('/admin/badges', requireAuth, requireAdmin, async (req: Request
   }
 })
 
-// 📌 Modifier un badge personnalisé
+//  Modifier un badge personnalisé
 badgeRouter.put('/admin/badges/:id', requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id)
@@ -83,7 +81,7 @@ badgeRouter.put('/admin/badges/:id', requireAuth, requireAdmin, async (req: Requ
   }
 })
 
-// 📌 Supprimer un badge personnalisé
+//  Supprimer un badge personnalisé
 badgeRouter.delete('/admin/badges/:id', requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id)

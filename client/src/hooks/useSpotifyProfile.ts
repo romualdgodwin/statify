@@ -1,4 +1,3 @@
-// src/hooks/useSpotifyProfile.ts
 import { useEffect, useState } from "react";
 import { spotifyService } from "../services/spotifyService";
 import { useAuth } from "../contexts/AuthContext";

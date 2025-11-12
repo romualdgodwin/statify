@@ -1,4 +1,3 @@
-//seed.ts
 import { AppDataSource } from "../dataSource"
 import { User } from "../modules/user/userEntity"
 import bcrypt from "bcryptjs"

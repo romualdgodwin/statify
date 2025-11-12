@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import Joi from "joi";
 import { joiResolver } from "@hookform/resolvers/joi";
-import api from "../services/api"; // ✅ on utilise l’axios centralisé
+import api from "../services/api"; 
 
 type UserForm = {
   email: string;

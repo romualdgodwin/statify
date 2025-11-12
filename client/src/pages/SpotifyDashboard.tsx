@@ -1,4 +1,3 @@
-// client/src/pages/SpotifyDashboard.tsx
 import { useEffect, useState, useRef} from "react"; 
 import axios from "axios";
 import api from "../services/api";
@@ -133,7 +132,7 @@ export const SpotifyDashboard = () => {
   const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
 
   
-  // ✅ Nouveau : daily stats
+  // daily stats
   const [dailyLabels, setDailyLabels] = useState<string[]>([]);
   const [dailyValues, setDailyValues] = useState<number[]>([]);
   // Mapping Spotify -> Catégories personnalisées
@@ -289,7 +288,7 @@ const genreArtists: Record<string, string[]> = {};
 topArtists.forEach((a) => {
   if (!a.genres || a.genres.length === 0) return;
 
-  const mainGenre = a.genres[0]; // ✅ on prend le premier genre comme "principal"
+  const mainGenre = a.genres[0]; // on prend le premier genre comme "principal"
   if (!genreArtists[mainGenre]) genreArtists[mainGenre] = [];
   genreArtists[mainGenre].push(a.name);
 });
@@ -345,7 +344,7 @@ const devicePlayCount: Record<string, number> = {
 };
 
 recentPlays.forEach((play) => {
-  const rawType = play.deviceType || play.device?.type || "Ordinateur"; // fallback
+  const rawType = play.deviceType || play.device?.type || "Ordinateur";
   const mapped = deviceTypeMap[rawType] || "Ordinateur";
   devicePlayCount[mapped] = (devicePlayCount[mapped] || 0) + 1;
 });
@@ -375,11 +374,11 @@ const deviceData = {
       label: "Nombre de titres écoutés",
       data: Object.values(devicePlayCount),
       backgroundColor: [
-        "#1DB954", // Vert Spotify
-        "#3498db", // Bleu
-        "#9b59b6", // Violet
-        "#f1c40f", // Jaune
-        "#e74c3c", // Rouge
+        "#1DB954", 
+        "#3498db", 
+        "#9b59b6", 
+        "#f1c40f", 
+        "#e74c3c", 
       ],
       borderColor: "#121212",
       borderWidth: 2,

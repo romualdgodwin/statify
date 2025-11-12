@@ -1,4 +1,3 @@
-// server/src/modules/user/userEntity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -9,7 +8,7 @@ import {
 } from 'typeorm'
 import { UserHistory } from '../../userHistory/userHistoryEntity'
 
-@Entity('users') // ✅ Forcer le bon nom de table
+@Entity('users') 
 export class User {
   @PrimaryGeneratedColumn()
   id!: number
@@ -21,7 +20,7 @@ export class User {
   displayName?: string
 
   @Column({ default: 'user' })
-  role!: string // "user" | "admin"
+  role!: string 
 
   @Column({ nullable: true })
   spotifyId?: string
@@ -41,18 +40,18 @@ export class User {
   @Column({ type: 'timestamptz', nullable: true })
   lastLogin?: Date
 
-  // ✅ Mot de passe
+
   @Column({ nullable: true })
   password?: string
 
-  // ✅ Auto timestamps
+
   @CreateDateColumn()
   createdAt!: Date
 
   @UpdateDateColumn()
   updatedAt!: Date
 
-  // ✅ Relation avec l’historique
+
   @OneToMany(() => UserHistory, (history) => history.user, {
     cascade: true,
   })

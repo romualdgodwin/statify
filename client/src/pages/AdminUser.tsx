@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../services/api"; // ✅ utilise l’instance axios centralisée
+import api from "../services/api"; 
 import { useAuth } from "../contexts/AuthContext";
 
 type User = {
@@ -11,7 +11,7 @@ type User = {
 };
 
 export const AdminUsers = () => {
-  const { token } = useAuth(); // facultatif ici, car api.ts s’occupe du header
+  const { token } = useAuth(); 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

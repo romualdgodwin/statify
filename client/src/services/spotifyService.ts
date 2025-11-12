@@ -1,4 +1,3 @@
-// src/services/spotifyService.ts
 import api from "./api";
 
 export const spotifyService = {

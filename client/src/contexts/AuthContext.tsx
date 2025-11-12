@@ -21,7 +21,7 @@ type AuthContextType = {
     token: string,
     spotifyAccessToken?: string | null,
     spotifyRefreshToken?: string | null,
-    role?: string | null            // ✅ ajouté
+    role?: string | null        
   ) => void;
   logout: () => void;
 };
@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<DecodedToken | null>(null);
 
-  // 🔑 clés locales centralisées
+  // clés locales centralisées
   const STORAGE_KEYS = {
     token: "app_token",
     spotifyAccess: "spotify_token_access",
@@ -73,12 +73,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (savedRole) setRole(savedRole);
   }, []);
 
-  // ✅ Méthode login
+  // Méthode login
   const login = (
     newToken: string,
     newSpotifyAccessToken: string | null = null,
     newSpotifyRefreshToken: string | null = null,
-    newRole: string | null = null              // ✅ ajouté
+    newRole: string | null = null           
   ) => {
     localStorage.setItem(STORAGE_KEYS.token, newToken);
     setToken(newToken);

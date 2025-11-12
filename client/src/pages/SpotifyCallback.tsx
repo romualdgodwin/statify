@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { saveSpotifyLogin } from "../services/auth"; // ✅ important
+import { saveSpotifyLogin } from "../services/auth"; 
 
 export default function SpotifyCallback() {
   const navigate = useNavigate();
@@ -14,16 +14,16 @@ export default function SpotifyCallback() {
     const spotifyRefreshToken = params.get("spotifyRefreshToken");
 
     if (appToken && spotifyAccessToken && spotifyRefreshToken) {
-      // ✅ Sauvegarde dans localStorage
+      // Sauvegarde dans localStorage
       saveSpotifyLogin(appToken, spotifyAccessToken, spotifyRefreshToken);
 
-      // ✅ Mise à jour du contexte React
+      // Mise à jour du contexte React
       login(appToken, spotifyAccessToken, spotifyRefreshToken);
 
       // Redirection vers dashboard Spotify
       navigate("/spotify-dashboard");
     } else {
-      // ⚠️ Pas de token → retour login
+      // Pas de token → retour login
       navigate("/login");
     }
   }, [login, navigate]);

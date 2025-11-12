@@ -1,4 +1,3 @@
-// server/src/modules/auth/authController.ts
 import { Router, Request, Response, RequestHandler } from 'express';
 import { AppDataSource } from '../../dataSource';
 import { User } from '../user/userEntity';
@@ -13,15 +12,14 @@ export default authController;
 const validator = createValidator();
 const userRepository = AppDataSource.getRepository(User);
 
-// ✅ Clé secrète prise uniquement depuis .env
+//  Clé secrète prise uniquement depuis .env
 if (!process.env.JWT_SECRET) {
   throw new Error("❌ JWT_SECRET manquant dans le fichier .env");
 }
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// ======================================================
-// 📌 Validation schemas
-// ======================================================
+//  Validation schemas
+
 const registerSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().min(6).required(),
@@ -32,9 +30,9 @@ const loginSchema = Joi.object({
   password: Joi.string().required(),
 });
 
-// ======================================================
-// 📌 REGISTER (inscription classique → user uniquement)
-// ======================================================
+
+//  REGISTER (inscription classique → user uniquement)
+
 authController.post(
   '/register',
   validator.body(registerSchema),
@@ -53,7 +51,7 @@ authController.post(
       const newUser = userRepository.create({
         email,
         password: hashedPassword,
-        role: 'user', // ⚠️ Empêche la création d’un admin via API publique
+        role: 'user', // 
       });
 
       await userRepository.save(newUser);
@@ -66,9 +64,9 @@ authController.post(
   }) as RequestHandler,
 );
 
-// ======================================================
-// 📌 LOGIN (connexion admin ou user, via DB)
-// ======================================================
+
+//  LOGIN (connexion admin ou user, via DB)
+
 authController.post(
   '/login',
   validator.body(loginSchema),
@@ -121,9 +119,9 @@ authController.post(
   }) as RequestHandler,
 );
 
-// ======================================================
-// 📌 ME (vérifier le token & récupérer l’utilisateur)
-// ======================================================
+
+// (vérifier le token & récupérer l’utilisateur)
+
 authController.get(
   '/me',
   (async (req: Request, res: Response): Promise<void> => {

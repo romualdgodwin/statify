@@ -1,4 +1,3 @@
-// ✅ Charger les variables d'environnement dès le tout début
 import 'dotenv/config';
 import 'reflect-metadata';
 
@@ -37,7 +36,7 @@ app.use('/spotify', spotifyController);
 app.use('/admin', adminController);
 app.use('/api', badgeRouter)
 
-// ✅ Middleware global d’erreurs
+// Middleware global d’erreurs
 app.use(async (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   try {
     const repo = AppDataSource.getRepository(ErrorLog);
@@ -46,7 +45,7 @@ app.use(async (err: any, _req: express.Request, res: express.Response, _next: ex
       stack: err.stack ?? '',
     });
   } catch {
-    // On ignore l'erreur de log pour éviter une boucle infinie
+
   }
 
   res.status(500).json({
@@ -82,13 +81,13 @@ AppDataSource.initialize()
       console.log('🎵 SPOTIFY_REDIRECT_URI:', process.env.SPOTIFY_REDIRECT_URI);
     });
 
-    // 🕒 CRON job : toutes les 5 minutes
+    // CRON job : toutes les 5 minutes
     cron.schedule('*/5 * * * *', async () => {
       console.log('⏰ CRON (5min) : synchro Spotify');
       await syncSpotifyHistory();
     });
 
-    // 🌙 CRON job : tous les jours à 3h du matin
+    // CRON job : tous les jours à 3h du matin
     cron.schedule('0 3 * * *', async () => {
       console.log('🌙 CRON (3h du matin) : synchro complète Spotify');
       await syncSpotifyHistory();

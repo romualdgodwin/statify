@@ -1,17 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Form, Button, Alert } from "react-bootstrap";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api";             // axios centralisé
-import { saveAuthLogin } from "../services/auth"; // sauvegarde token
+import api from "../services/api";
+import { saveAuthLogin } from "../services/auth";
 
 export const Login = () => {
-  const { login } = useAuth();
+  const { login, token, spotifyAccessToken, role } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // ✅ Redirige automatiquement si déjà connecté (token classique OU Spotify)
+  useEffect(() => {
+    if (spotifyAccessToken || token) {
+      const target = token && role === "admin" ? "/admin-dashboard" : "/spotify-dashboard";
+      navigate(target, { replace: true });
+    }
+  }, [spotifyAccessToken, token, role, navigate]);
 
   // Connexion classique
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,13 +35,13 @@ export const Login = () => {
         return;
       }
 
-      // ✅ Sauvegarde et mise à jour du contexte
+      // Sauvegarde et mise à jour du contexte
       saveAuthLogin(res.data.token);
       login(res.data.token, null, null, res.data.role ?? null);
 
       setSuccess("Connexion réussie 🎉 Redirection...");
 
-      // ✅ Redirection selon rôle
+      // Redirection selon rôle
       setTimeout(() => {
         navigate(res.data.role === "admin" ? "/admin-dashboard" : "/spotify-dashboard");
       }, 1200);
@@ -46,7 +54,7 @@ export const Login = () => {
   // Connexion Spotify → redirection backend
   const handleSpotifyLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL}/spotify/login`;
-    // ⚠️ ça lit ton .env (ex: VITE_API_URL=http://localhost:3000)
+    //  ça lit .env (ex: VITE_API_URL=http://localhost:3000)
   };
 
   return (

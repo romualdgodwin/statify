@@ -16,13 +16,13 @@ export async function getDailyStats(userId: number, days = 7) {
   );
 
 
-  // Générer la continuité des jours (valeurs manquantes = 0)
+  // Générer la continuité des jours 
   const end = new Date();
   end.setHours(0, 0, 0, 0);
   const start = new Date(end);
   start.setDate(end.getDate() - (days - 1));
 
-  // ✅ Forcer la normalisation des dates au format YYYY-MM-DD
+  // Forcer la normalisation des dates au format YYYY-MM-DD
   const map = new Map(
     rows.map(r => [new Date(r.d).toISOString().slice(0, 10), r.count])
   );

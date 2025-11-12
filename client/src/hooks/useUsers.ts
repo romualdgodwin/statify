@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../services/api"; // ✅ utilise ton axios centralisé
+import api from "../services/api"; 
 
 export type User = {
   id: number;
@@ -17,7 +17,7 @@ export const useUsers = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const { data } = await api.get<User[]>("/users"); // ✅ plus besoin du host
+        const { data } = await api.get<User[]>("/users"); 
         setUsers(data);
         setError(undefined);
       } catch (err: any) {

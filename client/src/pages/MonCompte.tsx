@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../services/api"; // ✅ axios centralisé
+import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 
 type LocalUser = {
@@ -18,7 +18,7 @@ type SpotifyProfile = {
 };
 
 export const MonCompte = () => {
-  const { token } = useAuth(); // ✅ on prend l'appToken, pas spotifyAccessToken
+  const { token } = useAuth(); // on prend l'appToken, pas spotifyAccessToken
   const [localUser, setLocalUser] = useState<LocalUser | null>(null);
   const [spotifyProfile, setSpotifyProfile] = useState<SpotifyProfile | null>(null);
 
@@ -32,7 +32,7 @@ export const MonCompte = () => {
     const fetchUser = async () => {
       setIsLoadingUser(true);
       try {
-        const res = await api.get("/users/me"); // ✅ JWT auto ajouté
+        const res = await api.get("/users/me"); // JWT auto ajouté
         setLocalUser(res.data);
       } catch {
         setErrorUser("Impossible de récupérer les infos utilisateur");
@@ -45,7 +45,7 @@ export const MonCompte = () => {
       if (!token) return;
       setIsLoadingSpotify(true);
       try {
-        // ✅ maintenant on passe par notre backend qui gère le refresh
+        // on passe par notre backend qui gère le refresh
         const res = await api.get("/spotify/me");
         setSpotifyProfile(res.data);
       } catch {

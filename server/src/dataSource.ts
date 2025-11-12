@@ -11,8 +11,8 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'azerty',
   database: process.env.DB_NAME || 'statify',
-  synchronize: true, // crée automatiquement les tables (à désactiver en prod)
-  logging: false, // affiche les requêtes SQL dans la console
+  synchronize: true, 
+  logging: false, 
   entities: [User, UserHistory, Badge],
 })
 
