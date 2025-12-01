@@ -3,13 +3,13 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
 
-// 🧩 Pages Utilisateurs
+//  Pages Utilisateurs
 import { Login } from "./pages/Login";
 import { MonCompte } from "./pages/MonCompte";
 import { SpotifyDashboard } from "./pages/SpotifyDashboard";
 import SpotifyCallback from "./pages/SpotifyCallback";
 
-// 🛠️ Pages Admin
+//  Pages Admin
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminBadges from "./pages/AdminBadges";
 import { Users } from "./pages/Users";

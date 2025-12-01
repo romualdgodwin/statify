@@ -1,21 +1,16 @@
 import axios from 'axios'
 import querystring from 'querystring'
 import { AppDataSource } from '../dataSource'
-import { User } from '../modules/user/userEntity' // ✅
-import { config } from '../configs';
-
-
-
-
+import { User } from '../modules/user/userEntity'
+import { config } from '../configs'
 
 const CLIENT_ID = config.spotify.clientId
 const CLIENT_SECRET = config.spotify.clientSecret
 console.log(
   '🔑 Using Spotify credentials:',
   CLIENT_ID,
-  CLIENT_SECRET?.slice(0, 5) + '...',
+  CLIENT_SECRET?.slice(0, 5) + '...'
 )
-
 
 export async function getValidAccessToken(
   user: User,
@@ -23,7 +18,7 @@ export async function getValidAccessToken(
   // Vérifie si le token est encore valide
   if (
     user.spotifyAccessToken &&
-    user.tokenExpiresAt &&
+    user.tokenExpiresAt && // check explicite
     user.tokenExpiresAt.getTime() > Date.now()
   ) {
     return user.spotifyAccessToken
@@ -31,7 +26,7 @@ export async function getValidAccessToken(
 
   if (!user.spotifyRefreshToken) {
     throw new Error(
-      '❌ Aucun refresh_token pour cet utilisateur.',
+      '❌ Aucun refresh_token pour cet utilisateur.'
     )
   }
 
@@ -46,8 +41,7 @@ export async function getValidAccessToken(
       }),
       {
         headers: {
-          'Content-Type':
-            'application/x-www-form-urlencoded',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
       },
     )
@@ -56,11 +50,9 @@ export async function getValidAccessToken(
     const expiresIn = response.data.expires_in
 
     user.spotifyAccessToken = newAccessToken
-    user.tokenExpiresAt = new Date(
-      Date.now() + expiresIn * 1000,
-    )
+    user.tokenExpiresAt = new Date(Date.now() + expiresIn * 1000)
 
-    //  sauvegarde en base dans la table users
+    // sauvegarde en base dans la table users
     await AppDataSource.getRepository(User).save(user)
 
     console.log('✅ Nouveau Spotify access_token obtenu !')
@@ -68,7 +60,7 @@ export async function getValidAccessToken(
   } catch (error: any) {
     console.error(
       '❌ Erreur refresh token:',
-      error.response?.data || error.message,
+      error.response?.data || error.message
     )
     throw error
   }

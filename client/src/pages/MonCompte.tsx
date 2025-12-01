@@ -60,8 +60,9 @@ export const MonCompte = () => {
   }, [token]);
 
   const handleSpotifyLogin = () => {
-    window.location.href = "http://localhost:3000/spotify/login";
-  };
+  window.location.href = `${import.meta.env.VITE_API_URL}/spotify/login`;
+};
+
 
   return (
     <div

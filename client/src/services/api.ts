@@ -2,7 +2,7 @@ import axios from "axios";
 import { getAppToken } from "./auth";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+  baseURL: import.meta.env.VITE_API_URL || "https://127.0.0.1:3000",
 });
 
 // Ajoute automatiquement le JWT interne

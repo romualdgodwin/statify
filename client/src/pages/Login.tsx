@@ -54,7 +54,7 @@ export const Login = () => {
   // Connexion Spotify → redirection backend
   const handleSpotifyLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL}/spotify/login`;
-    //  ça lit .env (ex: VITE_API_URL=http://localhost:3000)
+
   };
 
   return (

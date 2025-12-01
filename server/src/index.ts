@@ -4,6 +4,9 @@ import 'reflect-metadata';
 import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron';
+import fs from 'fs';
+import https from 'https';
+import path from 'path';
 
 import { AppDataSource } from './dataSource';
 import { User } from './modules/user/userEntity';
@@ -15,9 +18,7 @@ import { syncSpotifyHistory } from './services/spotifySyncService';
 import { getValidAccessToken } from './utils/spotifyTokenManager';
 import { seedDatabase } from './config/seed';
 import { ErrorLog } from './modules/logs/errorLogEntity';
-import badgeRouter from './modules/badge/badgeRoutes'
-
-
+import badgeRouter from './modules/badge/badgeRoutes';
 
 const app = express();
 
@@ -34,7 +35,7 @@ app.use('/users', userRouter);
 app.use('/auth', authController);
 app.use('/spotify', spotifyController);
 app.use('/admin', adminController);
-app.use('/api', badgeRouter)
+app.use('/api', badgeRouter);
 
 // Middleware global d’erreurs
 app.use(async (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -44,9 +45,7 @@ app.use(async (err: any, _req: express.Request, res: express.Response, _next: ex
       message: err.message ?? 'Unknown error',
       stack: err.stack ?? '',
     });
-  } catch {
-
-  }
+  } catch {}
 
   res.status(500).json({
     error: 'Erreur interne serveur',
@@ -75,9 +74,18 @@ AppDataSource.initialize()
     // Première synchro directe
     await syncSpotifyHistory();
 
-    // On lance le serveur
-    app.listen(port, () => {
-      console.log(`✅ Server started at http://localhost:${port}`);
+    // Lecture des certificats SSL
+    const keyPath = path.join(__dirname, '127.0.0.1-key.pem');
+    const certPath = path.join(__dirname, '127.0.0.1.pem');
+
+    const httpsOptions = {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath),
+    };
+
+    // On lance le serveur HTTPS
+    https.createServer(httpsOptions, app).listen(port, () => {
+      console.log(`✅ Server started at https://127.0.0.1:${port}`);
       console.log('🎵 SPOTIFY_REDIRECT_URI:', process.env.SPOTIFY_REDIRECT_URI);
     });
 

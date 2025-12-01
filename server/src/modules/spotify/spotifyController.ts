@@ -71,6 +71,7 @@ spotifyController.get('/callback', (async (
   }
 
   try {
+    console.log('➡️ Callback reçu, code Spotify:', code)
     const tokenResponse = await axios.post(
       'https://accounts.spotify.com/api/token',
       querystring.stringify({
@@ -90,6 +91,7 @@ spotifyController.get('/callback', (async (
 
     const { access_token, refresh_token, expires_in } =
       tokenResponse.data
+      console.log('🎯 Token Spotify reçu:', { access_token, refresh_token, expires_in })
 
     const profileResponse = await axios.get(
       'https://api.spotify.com/v1/me',
@@ -100,11 +102,13 @@ spotifyController.get('/callback', (async (
       }
     )
     const spotifyProfile = profileResponse.data
+    console.log('🎯 Profil Spotify récupéré:', spotifyProfile)
 
     let user = await userRepository.findOne({
       where: { spotifyId: spotifyProfile.id },
     })
     if (user) {
+       console.log('🔄 Utilisateur existant trouvé, mise à jour tokens')
       user.spotifyAccessToken = access_token
       user.spotifyRefreshToken = refresh_token
       user.tokenExpiresAt = new Date(
@@ -112,6 +116,7 @@ spotifyController.get('/callback', (async (
       )
       user.role = user.role || 'user'
     } else {
+      console.log('➕ Nouvel utilisateur, création en DB')
       user = userRepository.create({
         email: spotifyProfile.email,
         displayName: spotifyProfile.display_name,
@@ -125,6 +130,7 @@ spotifyController.get('/callback', (async (
       })
     }
     await userRepository.save(user)
+    console.log('💾 Utilisateur enregistré/mis à jour en DB:', user)
 
     const appToken = jwt.sign(
       {
@@ -138,11 +144,18 @@ spotifyController.get('/callback', (async (
       { algorithm: 'HS256', expiresIn: '7d' }
     )
 
-    const frontendUrl =
-      process.env.FRONTEND_URL || 'http://localhost:5173'
-    res.redirect(
-      `${frontendUrl}/spotify-callback?type=spotify&appToken=${appToken}&spotifyAccessToken=${access_token}&spotifyRefreshToken=${refresh_token}`
-    )
+    console.log('🔑 App token généré')
+
+  const frontendUrl = process.env.FRONTEND_URL;
+if (!frontendUrl) {
+  throw new Error('❌ FRONTEND_URL manquant dans le .env');
+}
+
+res.redirect(
+  `${frontendUrl}/spotify-callback?type=spotify&appToken=${appToken}&spotifyAccessToken=${access_token}&spotifyRefreshToken=${refresh_token}`
+);
+
+    console.log('➡️ Redirection vers le frontend avec tokens')
     return
   } catch (error: any) {
     console.error(
